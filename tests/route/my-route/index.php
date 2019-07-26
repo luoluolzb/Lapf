@@ -1,7 +1,8 @@
 <?php
 require __DIR__ . '/../../../vendor/autoload.php';
 
-use lqf\route\{Route, DispatchResult};
+use lqf\route\Route;
+use lqf\route\DispatchResult;
 
 // Fetch method and URI from somewhere
 $httpMethod = $_SERVER['REQUEST_METHOD'];
@@ -9,13 +10,13 @@ $uri = $_SERVER['REQUEST_URI'];
 
 // Strip query string (?foo=bar) and decode URI
 if (false !== $pos = strpos($uri, '?')) {
-    $pathinfo = substr($uri, 0, $pos);
+    $patInfo = substr($uri, 0, $pos);
     $queryStr = substr($uri, $pos + 1);
 } else {
-    $pathinfo = $uri;
+    $patInfo = $uri;
     $queryStr = '';
 }
-$pathinfo = rawurldecode($pathinfo);
+$patInfo = rawurldecode($patInfo);
 
 $route = new Route;
 
@@ -23,31 +24,32 @@ $route->get('/', function() {
     echo "route test";
 });
 
-$route->any('/hello/{name:\w+}', function(array $params) {
-    echo "hello, ", $params['name'];
+// 抛出方法不允许异常
+// $route->aaa('/', function() {
+//     echo "route test";
+// });
+
+$route->any('/hello[/{name:\w+}]', function (array $params) {
+    echo "hello, ", $params['name'] ?? 'route';
 });
 
 $route->group('/admin', function (Route $r) {
-    $r->add('GET', '/do-something', function() {
+    $r->get('/do-something', function () {
         echo "do-something";
-    });
-    
-    $r->add('GET', '/do-another-thing', function() {
+    })->get('/do-another-thing', function () {
         echo "do-another-thing";
-    });
-    
-    $r->add('GET', '/do-something-else', function() {
+    })->get('/do-something-else', function () {
         echo "do-something-else";
     });
 });
 
-$route->get('/env', function(array $params) {
+$route->get('/env', function () {
     var_dump($_SERVER);
 });
 
-$dispatchResult = $route->dispatch($httpMethod, $pathinfo);
+$dispatchResult = $route->dispatch($httpMethod, $patInfo);
 
-switch ($dispatchResult->getStatus()) {
+switch ($dispatchResult->getStatusCode()) {
     case DispatchResult::FOUND:
         $handler = $dispatchResult->getHandler();
         $params = $dispatchResult->getParams();

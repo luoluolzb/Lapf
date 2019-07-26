@@ -1,11 +1,8 @@
 <?php
 namespace lqf\route;
 
-use lqf\route\RouteInterface;
-use lqf\route\DispatchResult;
 use lqf\route\exception\HttpMethodNotAllowedException;
 use lqf\route\exception\HandlerExistsException;
-
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher;
 use function FastRoute\simpleDispatcher;
@@ -14,6 +11,10 @@ use function FastRoute\simpleDispatcher;
  * 路由类
  *
  * 此路由类基于 nikic/fast-route 实现
+ * lqf 框架并不依赖此类，你可以实现：
+ * - RouteInterface
+ * - DispatchResult
+ * 接口编写自己的路由处理
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
@@ -21,6 +22,9 @@ class Route implements RouteInterface
 {
     /**
      * 允许注册路由规则的请求方法
+     *
+     * 不要将 true 修改为 false，如果要增加减少
+     * 允许的请求方法，应该删除或者增加键值对
      */
     public const ALLOW_METHODS = [
         'GET'    => true,
@@ -31,15 +35,14 @@ class Route implements RouteInterface
     ];
 
     /**
-     * 路由规则列表
-     * (method, pattern) => handler
+     * 路由规则表
      *
-     * 规则结构
+     * 规则表结构：
      * [
-     *     '(method, pattern)' => [
-     *         method,
-     *         pattern,
-     *         handler
+     *     "{$method}{$pattern}" => [
+     *         $method,
+     *         $pattern,
+     *         $handler
      *     ],
      * ]
      *
@@ -49,6 +52,7 @@ class Route implements RouteInterface
 
     /**
      * 路由分组前缀
+     * 用于添加路由分组
      *
      * @var string
      */
@@ -81,8 +85,8 @@ class Route implements RouteInterface
     /**
      * 添加一个路由组
      *
-     * @param  string   $prefix     组前缀
-     * @param  callable $addRandler 添加器
+     * @param  string   $prefix     路由组前缀
+     * @param  callable $addRandler 路由添加器
      *
      * @return void
      */
@@ -96,7 +100,7 @@ class Route implements RouteInterface
     /**
      * @see RouteInterface::dispatch
      */
-    public function dispatch(string $method, string $pathinfo): DispatchResultInterface
+    public function dispatch(string $method, string $pathInfo): DispatchResultInterface
     {
         $rules = &$this->rules;
         
@@ -107,92 +111,42 @@ class Route implements RouteInterface
         };
 
         $dispatcher = simpleDispatcher($routeAdd);
-        $routeInfo = $dispatcher->dispatch($method, $pathinfo);
-        $dispatchResult = new DispatchResult();
-
-        switch ($routeInfo[0]) {
+        $info = $dispatcher->dispatch($method, $pathInfo);
+        
+        $res = new DispatchResult();
+        switch ($info[0]) {
             case Dispatcher::NOT_FOUND:
-                $dispatchResult->setStatus(DispatchResult::NOT_FOUND);
+                $res->setStatusCode(DispatchResult::NOT_FOUND);
                 break;
             
             case Dispatcher::METHOD_NOT_ALLOWED:
-                $dispatchResult->setStatus(DispatchResult::METHOD_NOT_ALLOWED);
-                $dispatchResult->setAllowMethods($routeInfo[1]);
+                $res->setStatusCode(DispatchResult::METHOD_NOT_ALLOWED);
+                $res->setAllowMethods($info[1]);
                 break;
             
             case Dispatcher::FOUND:
-                $dispatchResult->setStatus(DispatchResult::FOUND);
-                $dispatchResult->setHandler($routeInfo[1]);
-                $dispatchResult->setParams($routeInfo[2]);
+                $res->setStatusCode(DispatchResult::FOUND);
+                $res->setHandler($info[1]);
+                $res->setParams($info[2]);
                 break;
         }
 
-        return $dispatchResult;
+        return $res;
     }
 
     /**
-     * 添加请求方法为 GET 的路由规则
+     * 魔术方法：添加请求方法为 $method 的路由规则
+     * $method 必须要在 Route::ALLOW_METHODS 中
      *
-     * @param  string   $pattern 路由匹配规则
-     * @param  callable $handler 路由处理器
+     * @param  string   $method  请求方法
+     * @param  array    $args    路由匹配模式和路由处理器
      *
+     * @throws HttpMethodNotAllowedException 请求方法不被允许
      * @return Route
      */
-    public function get(string $pattern, callable $handler): Route
+    public function __call(string $method, array $args): Route
     {
-        return $this->addOne('GET', $pattern, $handler);
-    }
-
-    /**
-     * 添加请求方法为 POST 的路由规则
-     *
-     * @param  string   $pattern 路由匹配规则
-     * @param  callable $handler 路由处理器
-     *
-     * @return Route
-     */
-    public function post(string $pattern, callable $handler): Route
-    {
-        return $this->addOne('POST', $pattern, $handler);
-    }
-
-    /**
-     * 添加请求方法为 PUT 的路由规则
-     *
-     * @param  string   $pattern 路由匹配规则
-     * @param  callable $handler 路由处理器
-     *
-     * @return Route
-     */
-    public function put(string $pattern, callable $handler): Route
-    {
-        return $this->addOne('PUT', $pattern, $handler);
-    }
-
-    /**
-     * 添加请求方法为 PATCH 的路由规则
-     *
-     * @param  string   $pattern 路由匹配规则
-     * @param  callable $handler 路由处理器
-     *
-     * @return Route
-     */
-    public function patch(string $pattern, callable $handler): Route
-    {
-        return $this->addOne('PATCH', $pattern, $handler);
-    }
-
-    /**
-     * 添加请求方法为 DELETE 的路由规则
-     *
-     * @param  string   $pattern 路由匹配规则
-     * @param  callable $handler 路由处理器
-     *
-     * @return Route
-     */
-    public function delete(string $pattern, callable $handler): Route
-    {
-        return $this->addOne('DELETE', $pattern, $handler);
+        return $this->addOne($method, $args[0], $args[1]);
     }
 
     /**
@@ -205,11 +159,9 @@ class Route implements RouteInterface
      */
     public function any(string $pattern, callable $handler): Route
     {
-        $this->addOne('GET', $pattern, $handler);
-        $this->addOne('POST', $pattern, $handler);
-        $this->addOne('PUT', $pattern, $handler);
-        $this->addOne('PATCH', $pattern, $handler);
-        $this->addOne('DELETE', $pattern, $handler);
+        foreach (self::ALLOW_METHODS as $method => $value) {
+            $this->addOne($method, $pattern, $handler);
+        }
         return $this;
     }
 
@@ -220,7 +172,7 @@ class Route implements RouteInterface
     {
         $method = strtoupper($method);
         if (!isset(self::ALLOW_METHODS[$method])) {
-            throw new HttpMethodNotAllowedException("The handler for ({$method}, {$pattern}) already exists");
+            throw new HttpMethodNotAllowedException("The request method '{$method}' not allowed");
         }
 
         $pattern = $this->groupPrefix . $pattern;

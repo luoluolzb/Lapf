@@ -1,13 +1,11 @@
 <?php
 namespace lqf\env;
 
-use lqf\env\EnvException;
-
 /**
  * 环境类
  *
- * 环境参数只能在实例化类的时候导入
- * 并且参数在之后不能修改，只能读取
+ * 为了安全考虑，所有的环境参数只能在实例化类的时候一次性导入
+ * 在之后不能修改，只能读取
  *
  * 你可以继承此类让它可以从配置文件（如.env）读取参数
  */
@@ -67,5 +65,17 @@ class Env
     public function has($name): bool
     {
         return isset($this->env[$name]);
+    }
+
+    /**
+     * 魔术方法：获取某个环境参数
+     *
+     * @param mixed $name 参数名
+     *
+     * @return mixed 参数值
+     */
+    public function __get($name)
+    {
+        return $this->get($name);
     }
 }

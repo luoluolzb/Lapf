@@ -3,8 +3,8 @@ namespace lqf;
 
 use lqf\env\Env;
 use lqf\route\RouteInterface;
-use Psr\Container\ContainerInterface;
 use lqf\route\DispatchResultInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * 应用类
@@ -12,7 +12,7 @@ use lqf\route\DispatchResultInterface;
 class App
 {
     /**
-     * 路由实例
+     * 环境实例
      *
      * @var Env
      */
@@ -35,7 +35,8 @@ class App
     /**
      * 实例化应用类
      *
-     * @param ContainerInterface $container psr-11容器
+     * @param Env                $env       环境实例
+     * @param ContainerInterface $container psr-11容器实例
      * @param RouteInterface     $route     路由实例
      */
     public function __construct(
@@ -83,34 +84,35 @@ class App
      *
      * @return void
      */
-    public function start()
+    public function start(): void
     {
         // 解析请求
         $httpMethod = $this->env->get('REQUEST_METHOD');
         $uri = $this->env->get('REQUEST_URI');
-        if (false !== $pos = strpos($uri, '?')) {
-            $pathinfo = substr($uri, 0, $pos);
-            $queryStr = substr($uri, $pos + 1);
+        $pos = strpos($uri, '?');
+        if (false !== $pos) {
+            $pathInfo = substr($uri, 0, $pos);
+            // $queryStr = substr($uri, $pos + 1);
         } else {
-            $pathinfo = $uri;
-            $queryStr = '';
+            $pathInfo = $uri;
+            // $queryStr = '';
         }
-        $pathinfo = rawurldecode($pathinfo);
+        $pathInfo = rawurldecode($pathInfo);
 
         // 路由调度
-        $dispatchResult = $this->route->dispatch($httpMethod, $pathinfo);
+        $res = $this->route->dispatch($httpMethod, $pathInfo);
 
-        switch ($dispatchResult->getStatus()) {
+        switch ($res->getStatusCode()) {
             case DispatchResultInterface::FOUND:
-                $handler = $dispatchResult->getHandler();
-                $params = $dispatchResult->getParams();
+                $handler = $res->getHandler();
+                $params = $res->getParams();
                 $handler($params);
                 break;
             
             case DispatchResultInterface::METHOD_NOT_ALLOWED:
                 http_response_code(405);
-                $allowMethods = $dispatchResult->getAllowMethods();
-                header("Allow:" . implode(', ', $allowMethods));
+                $allowMethods = $res->getAllowMethods();
+                header("Allow: " . implode(', ', $allowMethods));
                 echo "405 Method Not Allowed";
                 break;
             
