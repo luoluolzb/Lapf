@@ -1,33 +1,27 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
+
+declare(strict_types=1);
+
+require __DIR__ . '/../../vendor/autoload.php';
 
 use lqf\route\Route;
 use lqf\route\DispatchResult;
+use Nyholm\Psr7\Factory\Psr17Factory;
 
-// Fetch method and URI from somewhere
-$httpMethod = $_SERVER['REQUEST_METHOD'];
-$uri = $_SERVER['REQUEST_URI'];
+$psr17Factory = new Psr17Factory();
+$uri = $psr17Factory->createUri($_SERVER['REQUEST_URI']);
+$request = $psr17Factory->createRequest($_SERVER['REQUEST_METHOD'], $uri);
 
-// Strip query string (?foo=bar) and decode URI
-if (false !== $pos = strpos($uri, '?')) {
-    $patInfo = substr($uri, 0, $pos);
-    $queryStr = substr($uri, $pos + 1);
-} else {
-    $patInfo = $uri;
-    $queryStr = '';
-}
-$patInfo = rawurldecode($patInfo);
+$route = new Route();
 
-$route = new Route;
+// $route->get('/', function() {
+//     echo "route test";
+// });
 
+// 抛出方法不允许异常
 $route->get('/', function() {
     echo "route test";
 });
-
-// 抛出方法不允许异常
-// $route->aaa('/', function() {
-//     echo "route test";
-// });
 
 $route->any('/hello[/{name:\w+}]', function (array $params) {
     echo "hello, ", $params['name'] ?? 'route';
@@ -47,7 +41,7 @@ $route->get('/env', function () {
     var_dump($_SERVER);
 });
 
-$dispatchResult = $route->dispatch($httpMethod, $patInfo);
+$dispatchResult = $route->dispatch($request);
 
 switch ($dispatchResult->getStatusCode()) {
     case DispatchResult::FOUND:

@@ -1,5 +1,10 @@
 <?php
-namespace lqf\env;
+
+declare(strict_types=1);
+
+namespace lqf;
+
+use \RuntimeException;
 
 /**
  * 环境类
@@ -38,7 +43,7 @@ class Env
         // 检测必要运行环境参数
         foreach (self::REQUIRE_PARAMS as $name) {
             if (!isset($this->env[$name])) {
-                throw new EnvException("Lack of necessary environment parameter '$name'");
+                throw new RuntimeException("Lack of necessary environment parameter: {$name}");
             }
         }
     }

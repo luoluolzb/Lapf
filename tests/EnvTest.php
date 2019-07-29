@@ -1,8 +1,10 @@
 <?php
-require __DIR__ . '/../../vendor/autoload.php';
 
-use lqf\env\Env;
-use lqf\env\EnvException;
+declare(strict_types=1);
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use lqf\Env;
 
 try {
     // CLI 模式下抛出异常
@@ -12,6 +14,6 @@ try {
     var_dump($env->REQUEST_URI);
 
     var_dump($env);
-} catch (EnvException $e) {
+} catch (\RuntimeException $e) {
     var_dump($e->getMessage());
 }

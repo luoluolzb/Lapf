@@ -1,8 +1,12 @@
 <?php
+
+declare(strict_types=1);
+
 namespace lqf\route;
 
-use lqf\route\exception\HttpMethodNotAllowedException;
-use lqf\route\exception\HandlerExistsException;
+use \UnexpectedValueException;
+use \RuntimeException;
+use Psr\Http\Message\RequestInterface;
 use FastRoute\RouteCollector;
 use FastRoute\Dispatcher;
 use function FastRoute\simpleDispatcher;
@@ -11,10 +15,7 @@ use function FastRoute\simpleDispatcher;
  * 路由类
  *
  * 此路由类基于 nikic/fast-route 实现
- * lqf 框架并不依赖此类，你可以实现：
- * - RouteInterface
- * - DispatchResult
- * 接口编写自己的路由处理
+ * lqf 框架并不依赖此类，你可以实现 RouteInterface 接口编写自己的路由处理
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
@@ -100,7 +101,7 @@ class Route implements RouteInterface
     /**
      * @see RouteInterface::dispatch
      */
-    public function dispatch(string $method, string $pathInfo): DispatchResultInterface
+    public function dispatch(RequestInterface $request): DispatchResult
     {
         $rules = &$this->rules;
         
@@ -111,7 +112,10 @@ class Route implements RouteInterface
         };
 
         $dispatcher = simpleDispatcher($routeAdd);
-        $info = $dispatcher->dispatch($method, $pathInfo);
+        $info = $dispatcher->dispatch(
+            $request->getMethod(),
+            $request->getUri()->getPath()
+        );
         
         $res = new DispatchResult();
         switch ($info[0]) {
@@ -141,7 +145,7 @@ class Route implements RouteInterface
      * @param  string   $method  请求方法
      * @param  array    $args    路由匹配模式和路由处理器
      *
-     * @throws HttpMethodNotAllowedException 请求方法不被允许
+     * @throws RuntimeException  路由异常
      * @return Route
      */
     public function __call(string $method, array $args): Route
@@ -155,6 +159,7 @@ class Route implements RouteInterface
      * @param  string   $pattern 路由匹配规则
      * @param  callable $handler 路由处理器
      *
+     * @throws RuntimeException  路由异常
      * @return Route
      */
     public function any(string $pattern, callable $handler): Route
@@ -172,14 +177,14 @@ class Route implements RouteInterface
     {
         $method = strtoupper($method);
         if (!isset(self::ALLOW_METHODS[$method])) {
-            throw new HttpMethodNotAllowedException("The request method '{$method}' not allowed");
+            throw new UnexpectedValueException("The request method {$method} is not allowed");
         }
 
         $pattern = $this->groupPrefix . $pattern;
         $key = $method . $pattern;
         
         if (isset($this->rules[$key])) {
-            throw new HandlerExistsException("The handler for ({$method}, {pattern}) already exists");
+            throw new RuntimeException("The route rule ({$method}, {$pattern}) already exists");
         }
         
         $this->rules[$key] = [$method, $pattern, $handler];

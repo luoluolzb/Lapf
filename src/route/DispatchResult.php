@@ -1,15 +1,40 @@
 <?php
+
+declare(strict_types=1);
+
 namespace lqf\route;
 
-use lqf\route\exception\StatusNotMatchException;
+use \BadMethodCallException;
 
 /**
  * 路由调度结果类
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
-class DispatchResult implements DispatchResultInterface
+class DispatchResult
 {
+    /**
+     * 路由调度结果状态码：无（未开始匹配）
+     *
+     * 应该用此作为状态码初始值
+     */
+    public const NONE = 0;
+
+    /**
+     * 路由调度结果状态码：没找到当前请求的处理器
+     */
+    public const NOT_FOUND = 1;
+    
+    /**
+     * 路由调度结果状态码：找到当前请求的处理器，但是请求方法不允许
+     */
+    public const METHOD_NOT_ALLOWED = 2;
+    
+    /**
+     * 路由调度结果状态码：找到匹配的处理器
+     */
+    public const FOUND = 3;
+
     /**
      * 调度结果状态码
      *
@@ -72,7 +97,7 @@ class DispatchResult implements DispatchResultInterface
     public function getHandler(): callable
     {
         if ($this->statusCode != self::FOUND) {
-            throw new StatusNotMatchException('Status code must be FOUND for getHandler()');
+            throw new BadMethodCallException('The status code must be FOUND for getHandler()');
         }
         return $this->handler;
     }
@@ -83,7 +108,7 @@ class DispatchResult implements DispatchResultInterface
     public function getAllowMethods(): array
     {
         if ($this->statusCode != self::METHOD_NOT_ALLOWED) {
-            throw new StatusNotMatchException('Status code must be METHOD_NOT_ALLOWED for getAllowMethods()');
+            throw new BadMethodCallException('The status must be METHOD_NOT_ALLOWED for call getAllowMethods()');
         }
         return $this->allowMethods ?? [];
     }
@@ -94,7 +119,7 @@ class DispatchResult implements DispatchResultInterface
     public function getParams(): array
     {
         if ($this->statusCode != self::FOUND) {
-            throw new StatusNotMatchException('Status code must be FOUND for getParams()');
+            throw new BadMethodCallException('The status must be FOUND for call getParams()');
         }
         return $this->params ?? [];
     }

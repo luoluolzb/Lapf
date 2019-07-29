@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 require __DIR__ . '/../../../vendor/autoload.php';
 
 // Fetch method and URI from somewhere
