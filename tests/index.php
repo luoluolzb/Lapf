@@ -13,6 +13,7 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\ServerRequest as Request;
 use Nyholm\Psr7\Response;
 
+// 注入框架依赖
 AppFactory::bindEnv(new Env($_SERVER));
 AppFactory::bindRoute(new Route);
 AppFactory::bindPsr11Container(new Container);
@@ -22,7 +23,7 @@ $app = AppFactory::create();
 
 // 注入依赖
 $container = $app->getContainer();
-// 注入依赖
+
 $container->set('pdo', function (Container $c) {
     return new \PDO(
         "mysql:host=localhost;port=3306;dbname=test;charset=utf8;",
@@ -34,6 +35,11 @@ $container->set('pdo', function (Container $c) {
 
 // 注册路由
 $route = $app->getRoute();
+
+$route->get('/', function (Request $request, Response $response) {
+    $response->getBody()->write("welcome to use lqf");
+    return $response;
+});
 
 $route->get('/uri', function (Request $request, Response $response) {
     $body = $response->getBody();
@@ -70,11 +76,6 @@ $route->post('/post', function (Request $request, Response $response) {
     return $response;
 });
 
-$route->get('/', function (Request $request, Response $response) {
-    $response->getBody()->write("welcome to use lqf");
-    return $response;
-});
-
 $route->any('/hello[/{name:\w+}]', function (Request $request, Response $response) {
     $name = $this->getRouteParam('name', 'lqf');
     $response->getBody()->write("hello, {$name}");
@@ -92,7 +93,7 @@ $route->get('/users', function (Request $request, Response $response) {
 
 $route->get('/user/{id:\d+}', function (Request $request, Response $response) {
     $pdo = $this->getContainer()->get('pdo');
-    $params = $this->getRouteParam('id', -1);
+    $id = $this->getRouteParam('id', -1);
     $stmt = $pdo->query("select * from tb_user where id = {$id}");
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 

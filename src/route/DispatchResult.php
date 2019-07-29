@@ -7,7 +7,7 @@ namespace lqf\route;
 use \BadMethodCallException;
 
 /**
- * 路由调度结果类
+ * 路由调度结果
  *
  * @author luoluolzb <luoluolzb@163.com>
  */

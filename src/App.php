@@ -106,7 +106,7 @@ class App
     /**
      * 获取容器对象
      *
-     * @return ContainerInterface
+     * @return ContainerInterface 容器对象
      */
     public function getContainer(): ContainerInterface
     {
@@ -116,7 +116,7 @@ class App
     /**
      * 获取容器对象
      *
-     * @return RouteInterface
+     * @return RouteInterface 路由对象
      */
     public function getRoute(): RouteInterface
     {
@@ -161,7 +161,7 @@ class App
     /**
      * 构建请求对象
      *
-     * @return ServerRequestInterface
+     * @return ServerRequestInterface 服务器请求对象
      */
     protected function getRequest(): ServerRequestInterface
     {
@@ -186,7 +186,7 @@ class App
                 if (\substr($name, 0, 5) == 'HTTP_') {
                     $name = \ucwords(\strtolower(\str_replace('_', ' ', \substr($name, 5))));
                     $name = \str_replace(' ', '-', $name);
-                    $headers[] = $value;
+                    $headers[$name] = $value;
                 }
             }
         } else {
@@ -216,7 +216,7 @@ class App
     /**
      * 路由调度
      *
-     * @param  ServerRequestInterface $request [description]
+     * @param  ServerRequestInterface $request 服务器请求对象
      *
      * @return ResponseInterface 响应对象
      */
