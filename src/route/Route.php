@@ -73,7 +73,7 @@ class Route implements RouteInterface
      */
     public function add($method, string $pattern, callable $handler): Route
     {
-        if (!is_array($method)) {
+        if (!\is_array($method)) {
             $this->addOne($method, $pattern, $handler);
         } else {
             foreach ($method as &$value) {
@@ -119,19 +119,22 @@ class Route implements RouteInterface
         
         $res = new DispatchResult();
         switch ($info[0]) {
-            case Dispatcher::NOT_FOUND:
-                $res->setStatusCode(DispatchResult::NOT_FOUND);
+            case Dispatcher::FOUND:
+                $res->setStatusCode(DispatchResult::FOUND);
+                $res->setHandler($info[1]);
+                $res->setParams($info[2]);
                 break;
             
             case Dispatcher::METHOD_NOT_ALLOWED:
                 $res->setStatusCode(DispatchResult::METHOD_NOT_ALLOWED);
                 $res->setAllowMethods($info[1]);
                 break;
-            
-            case Dispatcher::FOUND:
-                $res->setStatusCode(DispatchResult::FOUND);
-                $res->setHandler($info[1]);
-                $res->setParams($info[2]);
+
+            case Dispatcher::NOT_FOUND:
+                $res->setStatusCode(DispatchResult::NOT_FOUND);
+                break;
+
+            default:
                 break;
         }
 
@@ -175,7 +178,7 @@ class Route implements RouteInterface
      */
     protected function addOne(string $method, string $pattern, callable $handler): Route
     {
-        $method = strtoupper($method);
+        $method = \strtoupper($method);
         if (!isset(self::ALLOW_METHODS[$method])) {
             throw new UnexpectedValueException("The request method {$method} is not allowed");
         }

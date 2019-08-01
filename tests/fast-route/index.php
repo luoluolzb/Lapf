@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../../../vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 
 // Fetch method and URI from somewhere
 $httpMethod = $_SERVER['REQUEST_METHOD'];
@@ -26,11 +26,8 @@ var_dump([
 
 // 添加路由
 $routeAdd = function (FastRoute\RouteCollector $r) {
-
     $r->addRoute('GET', '/users', 'get_all_users_handler');
-
     // $r->addRoute('GET', '/users', 'get_all_users_handler2');
-
     // {id} must be a number (\d+)
     $r->addRoute('GET', '/user/{id:\d+}', 'get_user_handler');
     // The /{title} suffix is optional
@@ -47,6 +44,10 @@ $dispatcher = FastRoute\simpleDispatcher($routeAdd, [
     'cacheFile' => __DIR__ . '/route.cache', /* required */
     'cacheDisabled' => false,     /* optional, enabled by default */
 ]);
+
+$dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
+    $r->addRoute('GET', '/aaa', 'aaa');
+});
 
 // 路由调度
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);

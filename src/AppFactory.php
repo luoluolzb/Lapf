@@ -65,52 +65,52 @@ class AppFactory
      */
     private static $serverRequestFactory;
 
-    public static function bindEnv(Env $env)
+    public static function bindEnv(Env $env): void
     {
         self::$env = $env;
     }
 
-    public static function bindRoute(RouteInterface $route)
+    public static function bindRoute(RouteInterface $route): void
     {
         self::$route = $route;
     }
 
-    public static function bindPsr11Container(ContainerInterface $container)
+    public static function bindPsr11Container(ContainerInterface $container): void
     {
         self::$container = $container;
     }
 
-    public static function bindRequestFactory(RequestFactoryInterface $factory)
+    public static function bindRequestFactory(RequestFactoryInterface $factory): void
     {
         self::$requestFactory = $factory;
     }
 
-    public static function bindResponseFactory(ResponseFactoryInterface $factory)
+    public static function bindResponseFactory(ResponseFactoryInterface $factory): void
     {
         self::$responseFactory = $factory;
     }
 
-    public static function bindServerRequestFactory(ServerRequestFactoryInterface $factory)
+    public static function bindServerRequestFactory(ServerRequestFactoryInterface $factory): void
     {
         self::$serverRequestFactory = $factory;
     }
     
-    public static function bindStreamFactory(StreamFactoryInterface $factory)
+    public static function bindStreamFactory(StreamFactoryInterface $factory): void
     {
         self::$streamFactory = $factory;
     }
 
-    public static function bindUploadedFileFactory(UploadedFileFactoryInterface $factory)
+    public static function bindUploadedFileFactory(UploadedFileFactoryInterface $factory): void
     {
         self::$uploadedFileFactory = $factory;
     }
 
-    public static function bindUriFactoryInterface(UriFactoryInterface $factory)
+    public static function bindUriFactoryInterface(UriFactoryInterface $factory): void
     {
         self::$uriFactory = $factory;
     }
 
-    public static function bindPsr17Factory($psr17Factory)
+    public static function bindPsr17Factory($psr17Factory): void
     {
         self::bindStreamFactory($psr17Factory);
         self::bindRequestFactory($psr17Factory);

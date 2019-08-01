@@ -71,11 +71,25 @@ class App
     private $serverRequestFactory;
 
     /**
-     * 路由参数
+     * 一次请求的路由参数
      *
      * @var Array
      */
     private $routeParams;
+
+    /**
+     * 一次请求的服务器请求对象
+     *
+     * @var ServerRequestInterface
+     */
+    private $request;
+
+    /**
+     * 一次请求的响应对象
+     *
+     * @var ResponseInterface
+     */
+    private $response;
     
     /**
      * 实例化应用类
@@ -100,11 +114,10 @@ class App
         $this->responseFactory = $responseFactory;
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
-        $this->routeParams = [];
     }
 
     /**
-     * 获取容器对象
+     * 获取应用的容器对象
      *
      * @return ContainerInterface 容器对象
      */
@@ -114,7 +127,7 @@ class App
     }
 
     /**
-     * 获取容器对象
+     * 获取应用的路由对象
      *
      * @return RouteInterface 路由对象
      */
@@ -124,15 +137,61 @@ class App
     }
 
     /**
+     * 获取应用的环境对象
+     *
+     * @return Env 环境对象
+     */
+    public function getEnv(): Env
+    {
+        return $this->env;
+    }
+
+    /**
+     * 从应用容器取出一个实体
+     *
+     * @param  mixed $id 实体标识符
+     *
+     * @return mixed 实体
+     */
+    public function get($id)
+    {
+        return $this->container->get($id);
+    }
+
+    /**
+     * 判断应用容器是否有某个实体
+     *
+     * @param  mixed $id 实体标识符
+     *
+     * @return bool
+     */
+    public function has($id)
+    {
+        return $this->container->has($id);
+    }
+
+    /**
+     * 魔术方法：从应用容器取出一个实体
+     *
+     * @param  mixed $id 实体标识符
+     *
+     * @return mixed 实体
+     */
+    public function __get($id)
+    {
+        return $this->container->get($id);
+    }
+
+    /**
      * 开始执行应用
      *
      * @return void
      */
     public function start(): void
     {
-        $request = $this->getRequest();
-        $response = $this->dispatch($request);
-        $this->sendResponse($response);
+        $this->request = $this->getRequest();
+        $this->response = $this->dispatch($this->request);
+        $this->sendResponse($this->response);
     }
 
     /**
@@ -180,7 +239,7 @@ class App
         $request = $this->serverRequestFactory->createServerRequest($requestMethod, $uri);
 
         // 设置请求头
-        if (!\function_exists('getallheaders')) {
+        if (!\function_exists('getallheaders')) { // apache
             $headers = [];
             foreach ($_SERVER as $name => $value) {
                 if (\substr($name, 0, 5) == 'HTTP_') {
@@ -189,7 +248,7 @@ class App
                     $headers[$name] = $value;
                 }
             }
-        } else {
+        } else {  // nginx
             $headers = \getallheaders();
         }
         foreach ($headers as $name => &$value) {
@@ -205,7 +264,7 @@ class App
             // 解析正文参数
             $bodyStr = (string) $bodyStream;
             if ($bodyStr) {
-                parse_str($bodyStr, $parsedBody);
+                \parse_str($bodyStr, $parsedBody);
                 $request = $request->withParsedBody($parsedBody);
             }
         }

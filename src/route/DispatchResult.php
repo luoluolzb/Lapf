@@ -39,10 +39,10 @@ class DispatchResult
      * 调度结果状态码
      *
      * 它的取值应该是下面几个值之一：
-     * - NONE               初始值，表示未开始匹配
-     * - NOT_FOUND          没找到当前请求的处理器
-     * - METHOD_NOT_ALLOWED 找到当前请求的处理器，但是请求方法不允许
-     * - FOUND              找到匹配的处理器
+     * - NONE
+     * - NOT_FOUND
+     * - METHOD_NOT_ALLOWED
+     * - FOUND
      *
      * @var int
      */
@@ -96,7 +96,7 @@ class DispatchResult
      */
     public function getHandler(): callable
     {
-        if ($this->statusCode != self::FOUND) {
+        if ($this->statusCode !== self::FOUND) {
             throw new BadMethodCallException('The status code must be FOUND for getHandler()');
         }
         return $this->handler;
@@ -107,7 +107,7 @@ class DispatchResult
      */
     public function getAllowMethods(): array
     {
-        if ($this->statusCode != self::METHOD_NOT_ALLOWED) {
+        if ($this->statusCode !== self::METHOD_NOT_ALLOWED) {
             throw new BadMethodCallException('The status must be METHOD_NOT_ALLOWED for call getAllowMethods()');
         }
         return $this->allowMethods ?? [];
@@ -118,7 +118,7 @@ class DispatchResult
      */
     public function getParams(): array
     {
-        if ($this->statusCode != self::FOUND) {
+        if ($this->statusCode !== self::FOUND) {
             throw new BadMethodCallException('The status must be FOUND for call getParams()');
         }
         return $this->params ?? [];

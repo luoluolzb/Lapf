@@ -29,20 +29,20 @@ class Env
      *
      * @var array
      */
-    protected $env;
+    protected $params;
 
     /**
      * 实例化环境类
      *
-     * @param array $env 环境参数
+     * @param array $params 环境参数
      */
-    public function __construct(array $env)
+    public function __construct(array $params)
     {
-        $this->env = $env;
+        $this->params = $params;
 
         // 检测必要运行环境参数
         foreach (self::REQUIRE_PARAMS as $name) {
-            if (!isset($this->env[$name])) {
+            if (!isset($this->params[$name])) {
                 throw new RuntimeException("Lack of necessary environment parameter: {$name}");
             }
         }
@@ -57,7 +57,7 @@ class Env
      */
     public function get($name)
     {
-        return $this->env[$name] ?? null;
+        return $this->params[$name] ?? null;
     }
 
     /**
@@ -69,7 +69,7 @@ class Env
      */
     public function has($name): bool
     {
-        return isset($this->env[$name]);
+        return isset($this->params[$name]);
     }
 
     /**

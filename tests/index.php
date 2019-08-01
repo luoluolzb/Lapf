@@ -83,20 +83,18 @@ $route->any('/hello[/{name:\w+}]', function (Request $request, Response $respons
 });
 
 $route->get('/users', function (Request $request, Response $response) {
-    $pdo = $this->getContainer()->get('pdo');
+    $pdo = $this->get('pdo');
     $stmt = $pdo->query("select * from tb_user");
     $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
     $response->getBody()->write(json_encode($rows));
     return $response;
 });
 
 $route->get('/user/{id:\d+}', function (Request $request, Response $response) {
-    $pdo = $this->getContainer()->get('pdo');
+    $pdo = $this->get('pdo');
     $id = $this->getRouteParam('id', -1);
     $stmt = $pdo->query("select * from tb_user where id = {$id}");
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
     $response->getBody()->write(json_encode($row));
     return $response;
 });
