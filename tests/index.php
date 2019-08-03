@@ -5,19 +5,20 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use lqf\AppFactory;
-use lqf\App;
 use lqf\Env;
-use lqf\route\Route;
 use luoluolzb\di\Container;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\ServerRequest as Request;
 use Nyholm\Psr7\Response;
 
+$whoops = new \Whoops\Run;
+$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+$whoops->register();
+
 // 注入框架依赖
-AppFactory::bindEnv(new Env($_SERVER));
-AppFactory::bindRoute(new Route);
 AppFactory::bindPsr11Container(new Container);
 AppFactory::bindPsr17Factory(new Psr17Factory);
+AppFactory::bindEnv(new Env($_SERVER));
 $app = AppFactory::create();
 
 
@@ -36,10 +37,16 @@ $container->set('pdo', function (Container $c) {
 // 注册路由
 $route = $app->getRoute();
 
-$route->get('/', function (Request $request, Response $response) {
+$route->map('GET', '/', function (Request $request, Response $response) {
     $response->getBody()->write("welcome to use lqf");
     return $response;
 });
+
+// 抛出路由已经存在异常
+// $route->get('/', function (Request $request, Response $response) {
+//     $response->getBody()->write("welcome to use lqf");
+//     return $response;
+// });
 
 $route->get('/uri', function (Request $request, Response $response) {
     $body = $response->getBody();
@@ -76,23 +83,23 @@ $route->post('/post', function (Request $request, Response $response) {
     return $response;
 });
 
-$route->any('/hello[/{name:\w+}]', function (Request $request, Response $response) {
-    $name = $this->getRouteParam('name', 'lqf');
+$route->any('/hello[/{name:\w+}]', function (Request $request, Response $response, array $params) {
+    $name = $params['name'] ?? 'lqf';
     $response->getBody()->write("hello, {$name}");
     return $response;
 });
 
-$route->get('/users', function (Request $request, Response $response) {
-    $pdo = $this->get('pdo');
+$route->get('/users', function (Request $request, Response $response) use ($app) {
+    $pdo = $app->get('pdo');
     $stmt = $pdo->query("select * from tb_user");
     $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     $response->getBody()->write(json_encode($rows));
     return $response;
 });
 
-$route->get('/user/{id:\d+}', function (Request $request, Response $response) {
-    $pdo = $this->get('pdo');
-    $id = $this->getRouteParam('id', -1);
+$route->get('/user/{id:\d+}', function (Request $request, Response $response, array $params) use ($app) {
+    $pdo = $app->get('pdo');
+    $id = $params['id'] ?? -1;
     $stmt = $pdo->query("select * from tb_user where id = {$id}");
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
     $response->getBody()->write(json_encode($row));
