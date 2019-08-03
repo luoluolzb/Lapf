@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace lqf;
 
-use lqf\route\RouteInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -24,11 +23,6 @@ class AppFactory
      * @var Env
      */
     private static $env;
-
-    /**
-     * @var RouteInterface
-     */
-    private static $route;
 
     /**
      * @var ContainerInterface
@@ -68,11 +62,6 @@ class AppFactory
     public static function bindEnv(Env $env): void
     {
         self::$env = $env;
-    }
-
-    public static function bindRoute(RouteInterface $route): void
-    {
-        self::$route = $route;
     }
 
     public static function bindPsr11Container(ContainerInterface $container): void
@@ -124,7 +113,6 @@ class AppFactory
     {
         return new App(
             self::$env,
-            self::$route,
             self::$container,
             self::$uriFactory,
             self::$streamFactory,

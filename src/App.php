@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace lqf;
 
 use \RuntimeException;
-use lqf\route\RouteInterface;
-use lqf\route\DispatchResult;
+use lqf\route\Route;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -29,11 +28,6 @@ class App
      * @var Env
      */
     private $env;
-
-    /**
-     * @var RouteInterface
-     */
-    private $route;
 
     /**
      * @var ContainerInterface
@@ -71,11 +65,9 @@ class App
     private $serverRequestFactory;
 
     /**
-     * 一次请求的路由参数
-     *
-     * @var Array
+     * @var Route
      */
-    private $routeParams;
+    private $route;
 
     /**
      * 一次请求的服务器请求对象
@@ -96,7 +88,6 @@ class App
      */
     public function __construct(
         Env $env,
-        RouteInterface $route,
         ContainerInterface $container,
         UriFactoryInterface $uriFactory,
         StreamFactoryInterface $streamFactory,
@@ -106,7 +97,6 @@ class App
         ServerRequestFactoryInterface $serverRequestFactory
     ) {
         $this->env = $env;
-        $this->route = $route;
         $this->container = $container;
         $this->uriFactory = $uriFactory;
         $this->streamFactory = $streamFactory;
@@ -114,6 +104,8 @@ class App
         $this->responseFactory = $responseFactory;
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
+
+        $this->route = new Route($responseFactory);
     }
 
     /**
@@ -129,9 +121,9 @@ class App
     /**
      * 获取应用的路由对象
      *
-     * @return RouteInterface 路由对象
+     * @return Route 路由对象
      */
-    public function getRoute(): RouteInterface
+    public function getRoute(): Route
     {
         return $this->route;
     }
@@ -190,31 +182,8 @@ class App
     public function start(): void
     {
         $this->request = $this->getRequest();
-        $this->response = $this->dispatch($this->request);
+        $this->response = $this->route->dispatch($this->request);
         $this->sendResponse($this->response);
-    }
-
-    /**
-     * 获取全部路由参数
-     *
-     * @return array 全部路由参数
-     */
-    public function getRouteParams(): array
-    {
-        return $this->routeParams ?? [];
-    }
-
-    /**
-     * 获取一个路由参数
-     *
-     * @param  string $name    参数名称
-     * @param  mixed  $default 参数默认值
-     *
-     * @return mixed 参数值
-     */
-    public function getRouteParam(string $name, $default)
-    {
-        return $this->getRouteParams()[$name] ?? $default;
     }
 
     /**
@@ -270,56 +239,6 @@ class App
         }
         
         return $request;
-    }
-
-    /**
-     * 路由调度
-     *
-     * @param  ServerRequestInterface $request 服务器请求对象
-     *
-     * @return ResponseInterface 响应对象
-     */
-    protected function dispatch(ServerRequestInterface $request): ResponseInterface
-    {
-        $response = $this->responseFactory->createResponse();
-
-        // 路由调度
-        $res = $this->route->dispatch($request);
-        switch ($res->getStatusCode()) {
-            case DispatchResult::FOUND:
-                $handler = $res->getHandler();
-                $this->routeParams = $res->getParams();
-                if ($handler instanceof \Closure) {
-                    $response = $handler->call($this, $request, $response);
-                } else {
-                    $response = $handler($request, $response);
-                }
-                if (!($response instanceof ResponseInterface)) {
-                    throw new RuntimeException("The handler must be return instance of ResponseInterface");
-                }
-                break;
-            
-            case DispatchResult::METHOD_NOT_ALLOWED:
-                $allowMethods = $res->getAllowMethods();
-                $response = $response->withStatus(405);
-                $response = $response->withHeader('Allow', $allowMethods);
-                $response = $response->withBody(
-                    $this->streamFactory->createStream("<h1>405 Method Not Allowed</h1>")
-                );
-                break;
-            
-            case DispatchResult::NOT_FOUND:
-                $response = $response->withStatus(404);
-                $response = $response->withBody(
-                    $this->streamFactory->createStream("<h1>404 Not Found</h1>")
-                );
-                break;
-            
-            default:
-                break;
-        }
-
-        return $response;
     }
 
     /**
