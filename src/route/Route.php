@@ -9,45 +9,17 @@ use \RuntimeException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Server\MiddlewareInterface;
-use FastRoute\RouteCollector;
-use FastRoute\Dispatcher;
-use function FastRoute\simpleDispatcher;
 
 /**
  * 路由类
- *
- * 此路由类基于 nikic/fast-route 实现
- * lqf 框架并不依赖此类，你可以实现 RouteInterface 接口编写自己的路由处理
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
 class Route implements RouteInterface
 {
     use RouteTrait;
-
-    /**
-     * 响应对象创建工厂
-     *
-     * @var ResponseFactoryInterface
-     */
-    protected $responseFactory;
-
-    /**
-     * 路由规则表
-     *
-     * 规则表结构：
-     * [
-     *     "{$method}{$pattern}" => [
-     *         $method,
-     *         $pattern,
-     *         $handler
-     *     ],
-     * ]
-     *
-     * @var array
-     */
-    protected $rules;
 
     /**
      * 路由分组前缀
@@ -58,13 +30,33 @@ class Route implements RouteInterface
     private $groupPrefix;
 
     /**
+     * 路由收集器对象
+     *
+     * @var Collector
+     */
+    private $collector;
+
+    /**
+     * 405错误处理器
+     *
+     * @var null|callable
+     */
+    private $methodNotAllowedHandler;
+
+    /**
+     * 404错误处理器
+     *
+     * @var null|callable
+     */
+    private $notFoundHandler;
+
+    /**
      * 实例化路由类
      */
-    public function __construct(ResponseFactoryInterface $factory)
+    public function __construct()
     {
-        $this->responseFactory = $factory;
-        $this->rules = [];
         $this->groupPrefix = '';
+        $this->collector = new Collector();
     }
 
     /**
@@ -72,66 +64,60 @@ class Route implements RouteInterface
      */
     public function map($method, string $pattern, callable $handler): RouteInterface
     {
-        if (!\is_array($method)) {
-            $this->mapOne($method, $pattern, $handler);
-        } else {
-            foreach ($method as &$value) {
-                $this->mapOne($value, $pattern, $handler);
-            }
-        }
+        $this->collector->map($method, $this->groupPrefix . $pattern, $handler);
         return $this;
+    }
+
+    /**
+     * @see RouteInterface::group
+     */
+    public function group(string $prefix, callable $addRandler): void
+    {
+        $this->groupPrefix = $prefix;
+        $addRandler($this);
+        $this->groupPrefix = '';
     }
     
     /**
      * @see RouteInterface::dispatch
      */
-    public function dispatch(RequestInterface $request): ResponseInterface
+    public function dispatch(RequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $rules = &$this->rules;
+        $dispatcher = new Dispatcher($this->collector);
+        $result = $dispatcher->dispatch($request);
         
-        $routeAdd = function (RouteCollector $collector) use (&$rules) {
-            foreach ($rules as &$rule) {
-                $collector->addRoute($rule[0], $rule[1], $rule[2]);
-            }
-        };
-
-        $dispatcher = simpleDispatcher($routeAdd);
-        $info = $dispatcher->dispatch(
-            $request->getMethod(),
-            $request->getUri()->getPath()
-        );
-        
-        $response = $this->responseFactory->createResponse();
-        switch ($info[0]) {
-            case Dispatcher::FOUND:
-                $handler = $info[1];
-                $params = $info[2];
+        switch ($result->getStatusCode()) {
+            case DispatchResult::FOUND:
+                $handler = $result->getHandler();
+                $params = $result->getParams();
                 $response = $handler($request, $response, $params);
-                if (!($response instanceof ResponseInterface)) {
-                    throw new RuntimeException("The handler must be return instance of ResponseInterface");
-                }
                 break;
             
-            case Dispatcher::METHOD_NOT_ALLOWED:
-                $allowMethods = $info[1];
+            case DispatchResult::METHOD_NOT_ALLOWED:
+                $allowMethods = $result->getAllowMethods();
                 $response = $response->withStatus(405);
-                $response = $response->withHeader('Allow', $allowMethods);
-                // $response = $response->withBody(
-                //     $this->streamFactory->createStream("<h1>405 Method Not Allowed</h1>")
-                // );
+                $response = $response->withHeader('Allow', implode(', ', $allowMethods));
+                $handler = $this->methodNotAllowedHandler;
+                if ($handler) {
+                    $response = $handler($request, $response, $allowMethods);
+                }
                 break;
 
-            case Dispatcher::NOT_FOUND:
+            case DispatchResult::NOT_FOUND:
                 $response = $response->withStatus(404);
-                // $response = $response->withBody(
-                //     $this->streamFactory->createStream("<h1>404 Not Found</h1>")
-                // );
+                $handler = $this->notFoundHandler;
+                if ($handler) {
+                    $response = $handler($request, $response);
+                }
                 break;
 
             default:
                 break;
         }
 
+        if (!($response instanceof ResponseInterface)) {
+            throw new RuntimeException("The handler must be return instance of ResponseInterface");
+        }
         return $response;
     }
 
@@ -143,38 +129,18 @@ class Route implements RouteInterface
     }
 
     /**
-     * 添加一个路由组
-     *
-     * @param  string   $prefix     路由组前缀
-     * @param  callable $addRandler 路由添加器
-     *
-     * @return void
+     * @see RouteInterface::setMethodNotAllowedHandler
      */
-    public function group(string $prefix, callable $addRandler): void
+    public function setMethodNotAllowedHandler(callable $handler): void
     {
-        $this->groupPrefix = $prefix;
-        $addRandler($this);
-        $this->groupPrefix = '';
+        $this->methodNotAllowedHandler = $handler;
     }
 
     /**
-     * @see RouteInterface::add
+     * @see RouteInterface::setNotFoundHandler
      */
-    protected function mapOne(string $method, string $pattern, callable $handler): RouteInterface
+    public function setNotFoundHandler(callable $handler): void
     {
-        $method = \strtoupper($method);
-        if (!isset(self::ALLOW_METHODS[$method])) {
-            throw new UnexpectedValueException("The request method {$method} is not allowed");
-        }
-
-        $pattern = $this->groupPrefix . $pattern;
-        $key = $method . $pattern;
-        
-        if (isset($this->rules[$key])) {
-            throw new RuntimeException("The route rule ({$method}, {$pattern}) already exists");
-        }
-        
-        $this->rules[$key] = [$method, $pattern, $handler];
-        return $this;
+        $this->notFoundHandler = $handler;
     }
 }

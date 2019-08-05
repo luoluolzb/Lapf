@@ -57,8 +57,8 @@ trait RouteTrait
      */
     public function any(string $pattern, callable $handler): RouteInterface
     {
-        foreach (self::ALLOW_METHODS as $method => $value) {
-            $this->mapOne($method, $pattern, $handler);
+        foreach (CollectorInterface::ALLOW_METHODS as $method => $value) {
+            $this->map($method, $pattern, $handler);
         }
         return $this;
     }

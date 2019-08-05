@@ -105,7 +105,34 @@ class App
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
 
-        $this->route = new Route($responseFactory);
+        $this->route = new Route();
+        
+        $this->route->setMethodNotAllowedHandler(function (
+            RequestInterface $request,
+            ResponseInterface $response,
+            array $allowMethods
+        ) use ($streamFactory) {
+            return $response->withBody(
+                $streamFactory->createStream(
+                    '<title>405 Method Not Allowed</title>
+                    <h1 align="center">405 Method Not Allowed</h1><hr />
+                    <p align="center">lqf framework<p/>'
+                )
+            );
+        });
+
+        $this->route->setNotFoundHandler(function (
+            RequestInterface $request,
+            ResponseInterface $response
+        ) use ($streamFactory) {
+            return $response->withBody(
+                $streamFactory->createStream(
+                    '<title>404 Not Found</title>
+                    <h1 align="center">404 Not Found</h1><hr />
+                    <p align="center">lqf framework<p/>'
+                )
+            );
+        });
     }
 
     /**
@@ -182,7 +209,10 @@ class App
     public function start(): void
     {
         $this->request = $this->getRequest();
-        $this->response = $this->route->dispatch($this->request);
+        $this->response = $this->route->dispatch(
+            $this->request,
+            $this->responseFactory->createResponse()
+        );
         $this->sendResponse($this->response);
     }
 
@@ -191,7 +221,7 @@ class App
      *
      * @return ServerRequestInterface 服务器请求对象
      */
-    protected function getRequest(): ServerRequestInterface
+    private function getRequest(): ServerRequestInterface
     {
         // 构建请求uri对象
         $requestUri = $this->env->get('REQUEST_URI');
@@ -248,7 +278,7 @@ class App
      *
      * @return void
      */
-    protected function sendResponse(ResponseInterface $response): void
+    private function sendResponse(ResponseInterface $response): void
     {
         // 发送响应码
         \http_response_code($response->getStatusCode());

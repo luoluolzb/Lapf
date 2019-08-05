@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace lqf\route;
 
 use \RuntimeException;
+use \InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -17,28 +18,15 @@ use Psr\Http\Server\MiddlewareInterface;
 interface RouteInterface
 {
     /**
-     * 允许注册路由规则的请求方法
-     *
-     * 不要将 true 修改为 false，如果要增加减少
-     * 允许的请求方法，应该删除或者增加键值对
-     */
-    public const ALLOW_METHODS = [
-        'GET'    => true,
-        'POST'   => true,
-        'PUT'    => true,
-        'DELETE' => true,
-        'PATCH'  => true,
-    ];
-
-    /**
      * 添加一条路由映射
      *
      * @param string|array   $method  允许的一个或多个请求方法
      * @param string         $pattern 路由匹配规则
      * @param callable       $handler 路由处理器
      *
-     * @throws RuntimeException 路由异常
-     * @return RouteInterface   路由对象本身
+     * @throws RuntimeException         路由异常
+     * @throws InvalidArgumentException 无效的method参数类型
+     * @return RouteInterface           路由对象本身
      */
     public function map($method, string $pattern, callable $handler): RouteInterface;
 
@@ -109,13 +97,24 @@ interface RouteInterface
     public function any(string $pattern, callable $handler): RouteInterface;
 
     /**
+     * 添加一个路由组
+     *
+     * @param  string   $prefix     路由组前缀
+     * @param  callable $addRandler 路由添加器
+     *
+     * @return void
+     */
+    public function group(string $prefix, callable $addRandler): void;
+
+    /**
      * 开始路由调度
      *
-     * @param  RequestInterface $request   客户端请求
+     * @param  RequestInterface  $request   客户端请求实例
+     * @param  ResponseInterface $response  客户端响应实例
      *
      * @return ResponseInterface 响应对象
      */
-    public function dispatch(RequestInterface $request): ResponseInterface;
+    public function dispatch(RequestInterface $request, ResponseInterface $response): ResponseInterface;
 
     /**
      * 在上次添加的路由映射上添加一个中间件，如果指定第二个参数 $isGlobal 为 true
@@ -127,4 +126,18 @@ interface RouteInterface
      * @return void
      */
     public function middleware(MiddlewareInterface $middleware, bool $isGlobal = false): void;
+
+    /**
+     * 设置405错误请求处理
+     *
+     * @param callable $handler 处理器
+     */
+    public function setMethodNotAllowedHandler(callable $handler): void;
+
+    /**
+     * 设置404错误请求处理
+     *
+     * @param callable $handler 处理器
+     */
+    public function setNotFoundHandler(callable $handler): void;
 }

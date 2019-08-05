@@ -11,6 +11,7 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\ServerRequest as Request;
 use Nyholm\Psr7\Response;
 
+// 自己注册错误处理，框架咱不接管
 $whoops = new \Whoops\Run;
 $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
 $whoops->register();
@@ -104,6 +105,20 @@ $route->get('/user/{id:\d+}', function (Request $request, Response $response, ar
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
     $response->getBody()->write(json_encode($row));
     return $response;
+});
+
+// 路由分组
+$route->group('/abc', function($route) {
+    $route->get('/d', function(Request $request, Response $response) {
+        $response->getBody()->write('ddd');
+        return $response;
+    })->get('/e', function(Request $request, Response $response) {
+        $response->getBody()->write('eee');
+        return $response;
+    })->get('/f', function(Request $request, Response $response) {
+        $response->getBody()->write('fff');
+        return $response;
+    });
 });
 
 // 执行应用

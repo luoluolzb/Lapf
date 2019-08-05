@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace lqf\route;
@@ -84,7 +83,10 @@ class DispatchResult
     }
 
     /**
-     * @see DispatchResultInterface::getStatus
+     * 获取路由调度结果状态码
+     *
+     * @return int 状态码
+     * @return int 路由调度状态码
      */
     public function getStatusCode(): int
     {
@@ -92,7 +94,12 @@ class DispatchResult
     }
 
     /**
-     * @see DispatchResultInterface::getHandler
+     * 如果状态码为 FOUND，返回相应的处理器
+     * 状态码为 FOUND 时，返回相应的处理器
+     *
+     * @throws BadMethodCallException 状态码不匹配
+     * @return callable
+     * @return callable 路由处理器
      */
     public function getHandler(): callable
     {
@@ -101,9 +108,13 @@ class DispatchResult
         }
         return $this->handler;
     }
-
+    
     /**
-     * @see DispatchResultInterface::getAllowMethods
+     * 如果状态码为 METHOD_NOT_ALLOWED，返回允许的请求方法列表
+     * 如果状态码为 METHOD_NOT_ALLOWED 时，返回允许的请求方法列表
+     *
+     * @throws BadMethodCallException 状态码不匹配
+     * @return array 允许的请求方法列表
      */
     public function getAllowMethods(): array
     {
@@ -114,7 +125,11 @@ class DispatchResult
     }
 
     /**
-     * @see DispatchResultInterface::getParams
+     * 如果状态码为 FOUND ，返回路由中的参数
+     * 如果状态码为 FOUND 时，返回路由中的参数
+     *
+     * @throws BadMethodCallException 状态码不匹配
+     * @return array 路由参数
      */
     public function getParams(): array
     {
@@ -153,7 +168,7 @@ class DispatchResult
     {
         $this->handler = $handler;
     }
-
+    
     /**
      * 设置路由参数
      *
