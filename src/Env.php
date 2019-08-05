@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace lqf;
+namespace Lqf;
 
 use \RuntimeException;
 
@@ -20,8 +20,10 @@ class Env
      * 框架必要的运行环境参数
      */
     public const REQUIRE_PARAMS = [
-        'REQUEST_METHOD',
+        'HTTP_HOST',
         'REQUEST_URI',
+        'REQUEST_METHOD',
+        'SERVER_PROTOCOL',
     ];
 
     /**

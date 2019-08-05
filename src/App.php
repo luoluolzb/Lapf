@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace lqf;
+namespace Lqf;
 
 use \RuntimeException;
-use lqf\route\Route;
+use Lqf\Route\Route;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -228,9 +228,8 @@ class App
         $protocol = $this->env->get('SERVER_PROTOCOL');
         $scheme = \strtolower(\explode('/', $protocol)[0]);
         $host = $this->env->get('HTTP_HOST');
-        $port = $this->env->get('SERVER_PORT');
 
-        $fullRawUri = "{$scheme}://{$host}:{$port}{$requestUri}";
+        $fullRawUri = "{$scheme}://{$host}{$requestUri}";
         $uri = $this->uriFactory->createUri($fullRawUri);
 
         // 构建请求对象

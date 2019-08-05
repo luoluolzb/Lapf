@@ -2,7 +2,7 @@
     "name": "luoluolzb/lqf",
     "description": "luoluolzb's another php framework",
     "keywords": ["lqf", "framework"],
-    "homepage": "https://github.com/luoluolzb/lqf",
+    "homepage": "https://github.com/luoluolzb/Lqf",
     "authors": [
         {
             "name": "luoluolzb",
@@ -27,7 +27,7 @@
     },
     "autoload": {
         "psr-4": {
-            "lqf\\": "src/"
+            "Lqf\\": "src/"
         }
     },
     "scripts": {

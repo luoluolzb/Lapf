@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use lqf\route\Collector as RouteCollector;
+use Lqf\Route\Collector as RouteCollector;
 
 $collector = new RouteCollector();
 $collector->map('GET', '/', function() {

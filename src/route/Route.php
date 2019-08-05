@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace lqf\route;
+namespace Lqf\Route;
 
 use \UnexpectedValueException;
 use \RuntimeException;
@@ -73,9 +73,10 @@ class Route implements RouteInterface
      */
     public function group(string $prefix, callable $addRandler): void
     {
-        $this->groupPrefix = $prefix;
+        $originPrefix = $this->groupPrefix;
+        $this->groupPrefix = $originPrefix . $prefix;
         $addRandler($this);
-        $this->groupPrefix = '';
+        $this->groupPrefix = $originPrefix;
     }
     
     /**

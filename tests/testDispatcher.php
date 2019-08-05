@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use lqf\route\Collector as RouteCollector;
-use lqf\route\Dispatcher as RouteDispatcher;
-use lqf\route\DispatchResult;
+use Lqf\Route\Collector as RouteCollector;
+use Lqf\Route\Dispatcher as RouteDispatcher;
+use Lqf\Route\DispatchResult;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
 $psr17Factory = new Psr17Factory();

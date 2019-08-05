@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace lqf;
+namespace Lqf;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\UriFactoryInterface;

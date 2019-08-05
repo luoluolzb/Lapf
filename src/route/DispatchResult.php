@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace lqf\route;
+namespace Lqf\Route;
 
 use \BadMethodCallException;
 

@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use lqf\AppFactory;
-use lqf\Env;
+use Lqf\AppFactory;
+use Lqf\Env;
 use luoluolzb\di\Container;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\ServerRequest as Request;
 use Nyholm\Psr7\Response;
 
-// 自己注册错误处理，框架咱不接管
-$whoops = new \Whoops\Run;
-$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+// 自己注册错误处理，框架不接管
+$whoops = new Whoops\Run;
+$whoops->pushHandler(new Whoops\Handler\PrettyPageHandler);
 $whoops->register();
 
 // 注入框架依赖
@@ -27,7 +27,7 @@ $app = AppFactory::create();
 $container = $app->getContainer();
 
 $container->set('pdo', function (Container $c) {
-    return new \PDO(
+    return new PDO(
         "mysql:host=localhost;port=3306;dbname=test;charset=utf8;",
         'root',
         '123456'
@@ -38,16 +38,52 @@ $container->set('pdo', function (Container $c) {
 // 注册路由
 $route = $app->getRoute();
 
+// 路由测试
+
 $route->map('GET', '/', function (Request $request, Response $response) {
     $response->getBody()->write("welcome to use lqf");
     return $response;
 });
 
-// 抛出路由已经存在异常
-// $route->get('/', function (Request $request, Response $response) {
-//     $response->getBody()->write("welcome to use lqf");
-//     return $response;
-// });
+// 抛出路由映射已经存在的异常
+try {
+    $route->get('/', function (Request $request, Response $response) {
+        return $response;
+    });
+} catch (Exception $e) {
+
+}
+
+$route->any('/hello[/{name:\w+}]', function (Request $request, Response $response, array $params) {
+    $name = $params['name'] ?? 'lqf';
+    $response->getBody()->write("hello, {$name}");
+    return $response;
+});
+
+// 路由分组
+$route->group('/abc', function ($route) {
+    $route->get('/ddd', function (Request $request, Response $response) {
+        $response->getBody()->write('ddd');
+        return $response;
+    })->get('/eee', function (Request $request, Response $response) {
+        $response->getBody()->write('eee');
+        return $response;
+    })->get('/fff', function (Request $request, Response $response) {
+        $response->getBody()->write('fff');
+        return $response;
+    });
+    $route->group('/ghi', function ($route) {
+        $route->get('/jjj', function (Request $request, Response $response) {
+            $response->getBody()->write('jjj');
+            return $response;
+        })->get('/kkk', function (Request $request, Response $response) {
+            $response->getBody()->write('kkk');
+            return $response;
+        });
+    });
+});
+
+// 测试操作请求对象
 
 $route->get('/uri', function (Request $request, Response $response) {
     $body = $response->getBody();
@@ -71,6 +107,8 @@ $route->any('/request_body_stream', function (Request $request, Response $respon
     return $response;
 });
 
+// 测试操作响应对象
+
 $route->any('/response', function (Request $request, Response $response) {
     $response = $response->withHeader('Server', 'lqf');
     $body = $response->getBody();
@@ -84,11 +122,7 @@ $route->post('/post', function (Request $request, Response $response) {
     return $response;
 });
 
-$route->any('/hello[/{name:\w+}]', function (Request $request, Response $response, array $params) {
-    $name = $params['name'] ?? 'lqf';
-    $response->getBody()->write("hello, {$name}");
-    return $response;
-});
+// 测试路由配合依赖注入容器的实际应用
 
 $route->get('/users', function (Request $request, Response $response) use ($app) {
     $pdo = $app->get('pdo');
@@ -105,20 +139,6 @@ $route->get('/user/{id:\d+}', function (Request $request, Response $response, ar
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
     $response->getBody()->write(json_encode($row));
     return $response;
-});
-
-// 路由分组
-$route->group('/abc', function($route) {
-    $route->get('/d', function(Request $request, Response $response) {
-        $response->getBody()->write('ddd');
-        return $response;
-    })->get('/e', function(Request $request, Response $response) {
-        $response->getBody()->write('eee');
-        return $response;
-    })->get('/f', function(Request $request, Response $response) {
-        $response->getBody()->write('fff');
-        return $response;
-    });
 });
 
 // 执行应用
