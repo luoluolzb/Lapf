@@ -61,7 +61,7 @@ class DispatchResult
      *
      * 当结果状态码为 FOUND 有效
      *
-     * @var callable
+     * @var callable|string
      */
     private $handler;
 
@@ -85,7 +85,6 @@ class DispatchResult
     /**
      * 获取路由调度结果状态码
      *
-     * @return int 状态码
      * @return int 路由调度状态码
      */
     public function getStatusCode(): int
@@ -98,10 +97,9 @@ class DispatchResult
      * 状态码为 FOUND 时，返回相应的处理器
      *
      * @throws BadMethodCallException 状态码不匹配
-     * @return callable
-     * @return callable 路由处理器
+     * @return callable|string 路由处理器
      */
-    public function getHandler(): callable
+    public function getHandler()
     {
         if ($this->statusCode !== self::FOUND) {
             throw new BadMethodCallException('The status code must be FOUND for getHandler()');
@@ -143,6 +141,8 @@ class DispatchResult
      * 设置状态码
      *
      * @param int $statusCode 状态码
+     *
+     * @return void
      */
     public function setStatusCode(int $statusCode): void
     {
@@ -153,6 +153,8 @@ class DispatchResult
      * 设置允许的请求方法
      *
      * @param array $allowMethods 不允许的方法列表
+     *
+     * @return void
      */
     public function setAllowMethods(array $allowMethods): void
     {
@@ -162,9 +164,11 @@ class DispatchResult
     /**
      * 设置路由处理器
      *
-     * @param callable $handler 处理器
+     * @param callable|string $handler 处理器
+     *
+     * @return void
      */
-    public function setHandler(callable $handler): void
+    public function setHandler($handler): void
     {
         $this->handler = $handler;
     }
@@ -173,6 +177,8 @@ class DispatchResult
      * 设置路由参数
      *
      * @param array $params 路由参数
+     *
+     * @return void
      */
     public function setParams(array $params): void
     {

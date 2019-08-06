@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lqf;
 
 use \RuntimeException;
-use Lqf\Route\Route;
+use Lqf\Route\Router;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -65,9 +65,9 @@ class App
     private $serverRequestFactory;
 
     /**
-     * @var Route
+     * @var Router
      */
-    private $route;
+    private $router;
 
     /**
      * 一次请求的服务器请求对象
@@ -105,9 +105,8 @@ class App
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
 
-        $this->route = new Route();
-        
-        $this->route->setMethodNotAllowedHandler(function (
+        $this->router = new Router();
+        $this->router->setMethodNotAllowedHandler(function (
             RequestInterface $request,
             ResponseInterface $response,
             array $allowMethods
@@ -120,8 +119,7 @@ class App
                 )
             );
         });
-
-        $this->route->setNotFoundHandler(function (
+        $this->router->setNotFoundHandler(function (
             RequestInterface $request,
             ResponseInterface $response
         ) use ($streamFactory) {
@@ -148,11 +146,11 @@ class App
     /**
      * 获取应用的路由对象
      *
-     * @return Route 路由对象
+     * @return Router 路由对象
      */
-    public function getRoute(): Route
+    public function getRouter(): Router
     {
-        return $this->route;
+        return $this->router;
     }
 
     /**
@@ -209,7 +207,7 @@ class App
     public function start(): void
     {
         $this->request = $this->getRequest();
-        $this->response = $this->route->dispatch(
+        $this->response = $this->router->dispatch(
             $this->request,
             $this->responseFactory->createResponse()
         );
@@ -237,7 +235,7 @@ class App
         $request = $this->serverRequestFactory->createServerRequest($requestMethod, $uri);
 
         // 设置请求头
-        if (!\function_exists('getallheaders')) { // apache
+        if (!\function_exists('\getallheaders')) { // apache
             $headers = [];
             foreach ($_SERVER as $name => $value) {
                 if (\substr($name, 0, 5) == 'HTTP_') {

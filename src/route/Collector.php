@@ -14,6 +14,8 @@ use \InvalidArgumentException;
  */
 class Collector implements CollectorInterface
 {
+    use CollectorTrait;
+
     /**
      * 路由规则表
      *
@@ -22,7 +24,7 @@ class Collector implements CollectorInterface
      *     "{$method}{$pattern}" => [
      *         $method,
      *         $pattern,
-     *         $handler
+     *         $handler,
      *     ],
      * ]
      *
@@ -41,27 +43,31 @@ class Collector implements CollectorInterface
     /**
      * @see CollectorInterface::map
      */
-    public function map($method, string $pattern, callable $handler): void
+    public function map($method, string $pattern, $handler): CollectorInterface
     {
-        if (\is_string($method)) {
+        if (\is_string($method)) {  // 只注册一个请求方法
             $method = \strtoupper($method);
             if (!isset(self::ALLOW_METHODS[$method])) {
                 throw new UnexpectedValueException("The request method {$method} is not allowed");
             }
-            
+            if (!\is_callable($handler) && !\is_string($handler)) {
+                throw new InvalidArgumentException("The handler must be callable");
+            }
+
             $key = "{$method} {$pattern}";
             if (isset($this->rules[$key])) {
                 throw new RuntimeException("The route rule ({$method}, {$pattern}) already exists");
             }
             
             $this->rules[$key] = [$method, $pattern, $handler];
-        } elseif (\is_array($method)) {
+        } elseif (\is_array($method)) {  // 注册多个请求方法
             foreach ($method as &$value) {
                 $this->map($value, $pattern, $handler);
             }
         } else {
             throw new InvalidArgumentException("The 'method' argument must be string or string[]");
         }
+        return $this;
     }
 
     /**

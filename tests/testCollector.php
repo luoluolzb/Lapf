@@ -1,25 +1,28 @@
 <?php
 declare(strict_types=1);
 
+namespace tests;
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use Lqf\Route\Collector as RouteCollector;
 
 $collector = new RouteCollector();
-$collector->map('GET', '/', function() {
+$collector->map('GET', '/', function () {
 });
 
-$collector->map('POST', '/', function() {
+$collector->map('POST', '/', function () {
 });
 
-// throw exception
+// 重复注册同样的路由会抛出异常
 try {
-	$collector->map('GET', '/', function() {
-	});
-} catch (RuntimeException $e) {
-	var_dump($e->getMessage());
+    $collector->map('GET', '/', function () {
+    });
+} catch (\RuntimeException $e) {
+    var_dump($e->getMessage());
 }
 
+// 可遍历
 foreach ($collector as $key => $value) {
-	var_dump($value);
+    var_dump($value);
 }

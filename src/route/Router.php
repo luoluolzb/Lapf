@@ -6,21 +6,17 @@ namespace Lqf\Route;
 
 use \UnexpectedValueException;
 use \RuntimeException;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
-use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Server\MiddlewareInterface;
+use Relay\Relay;
 
 /**
- * 路由类
+ * 路由器
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
-class Route implements RouteInterface
+class Router extends Collector implements RouterInterface
 {
-    use RouteTrait;
-
     /**
      * 路由分组前缀
      * 用于添加路由分组
@@ -30,11 +26,11 @@ class Route implements RouteInterface
     private $groupPrefix;
 
     /**
-     * 路由收集器对象
+     * 路由中间队列
      *
-     * @var Collector
+     * @var array
      */
-    private $collector;
+    private $middlewareQueue;
 
     /**
      * 405错误处理器
@@ -55,43 +51,47 @@ class Route implements RouteInterface
      */
     public function __construct()
     {
+        parent::__construct();
         $this->groupPrefix = '';
-        $this->collector = new Collector();
+        $this->middlewareQueue = [];
     }
 
     /**
      * @see RouteInterface::map
      */
-    public function map($method, string $pattern, callable $handler): RouteInterface
+    public function map($method, string $pattern, $handler): CollectorInterface
     {
-        $this->collector->map($method, $this->groupPrefix . $pattern, $handler);
-        return $this;
+        return parent::map($method, $this->groupPrefix . $pattern, $handler);
     }
 
     /**
      * @see RouteInterface::group
      */
-    public function group(string $prefix, callable $addRandler): void
+    public function group(string $prefix, callable $addHandler): RouterInterface
     {
         $originPrefix = $this->groupPrefix;
         $this->groupPrefix = $originPrefix . $prefix;
-        $addRandler($this);
+        $addHandler($this);
         $this->groupPrefix = $originPrefix;
+        return $this;
     }
     
     /**
      * @see RouteInterface::dispatch
+     * @throws RuntimeException
      */
-    public function dispatch(RequestInterface $request, ResponseInterface $response): ResponseInterface
+    public function dispatch(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $dispatcher = new Dispatcher($this->collector);
+        $dispatcher = new Dispatcher($this);
+
         $result = $dispatcher->dispatch($request);
+        $handler = null;
+        $params = [];
         
         switch ($result->getStatusCode()) {
             case DispatchResult::FOUND:
                 $handler = $result->getHandler();
                 $params = $result->getParams();
-                $response = $handler($request, $response, $params);
                 break;
             
             case DispatchResult::METHOD_NOT_ALLOWED:
@@ -99,34 +99,51 @@ class Route implements RouteInterface
                 $response = $response->withStatus(405);
                 $response = $response->withHeader('Allow', implode(', ', $allowMethods));
                 $handler = $this->methodNotAllowedHandler;
-                if ($handler) {
-                    $response = $handler($request, $response, $allowMethods);
-                }
+                $params = $allowMethods;
                 break;
 
             case DispatchResult::NOT_FOUND:
                 $response = $response->withStatus(404);
                 $handler = $this->notFoundHandler;
-                if ($handler) {
-                    $response = $handler($request, $response);
-                }
                 break;
 
             default:
                 break;
         }
 
-        if (!($response instanceof ResponseInterface)) {
-            throw new RuntimeException("The handler must be return instance of ResponseInterface");
-        }
+        // 将处理器放到中间件队列末尾
+        $this->middlewareQueue[] = function (
+            ServerRequestInterface $request,
+            $next
+        ) use (
+            $handler,
+            $response,
+            $params
+        ) {
+            if (\is_string($handler)) {
+                list($controllerName, $actionName) = \explode("::", $handler);
+                $controller = new $controllerName();
+                return $controller->$actionName($request, $response, $params);
+            } elseif (\is_callable($handler)) {
+                return $handler($request, $response, $params);
+            } else {
+                throw new RuntimeException("The route handler must be callable");
+            }
+        };
+
+        $relay = new Relay($this->middlewareQueue, new MiddlewareResolver);
+        $response = $relay->handle($request);
+
         return $response;
     }
 
     /**
      * @see RouteInterface::middleware
      */
-    public function middleware(MiddlewareInterface $middleware, bool $isGlobal = false): void
+    public function middleware($middleware): RouterInterface
     {
+        $this->middlewareQueue[] = $middleware;
+        return $this;
     }
 
     /**

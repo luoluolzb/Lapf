@@ -1,22 +1,32 @@
 <?php
 declare(strict_types=1);
 
+namespace tests;
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use Lqf\Route\Collector as RouteCollector;
 use Lqf\Route\Dispatcher as RouteDispatcher;
-use Lqf\Route\DispatchResult;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
+class MyClass
+{
+    public function __invoke()
+    {
+        echo "string";
+    }
+}
+
 $psr17Factory = new Psr17Factory();
 $psr17Factory = new Psr17Factory();
-$uri = $psr17Factory->createUri('http://localhost/g');
-$request = $psr17Factory->createRequest('VIEW', $uri);
+$uri = $psr17Factory->createUri('http://localhost/');
+$request = $psr17Factory->createRequest('GET', $uri);
 
 $collector = new RouteCollector();
-$collector->map('GET', '/', function() {});
-$collector->map('POST', '/', function() {});
+$collector->map('GET', '/', new MyClass);
+$collector->map('POST', '/', function () {
+});
 
 $dispatcher = new RouteDispatcher($collector);
 $result = $dispatcher->dispatch($request);
-var_dump($result);
+\var_dump($result);
