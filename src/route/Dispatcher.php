@@ -65,9 +65,6 @@ class Dispatcher implements DispatcherInterface
             case FastRouteDispatcher::NOT_FOUND:
                 $result->setStatusCode(DispatchResult::NOT_FOUND);
                 break;
-
-            default:
-                break;
         }
 
         return $result;

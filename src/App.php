@@ -291,7 +291,7 @@ class App
         $stream = $response->getBody();
         $stream->rewind();
         while (!empty($buffer = $stream->read(2048))) {
-            echo $buffer;
+            print $buffer;
         }
     }
 }

@@ -9,7 +9,7 @@ use \InvalidArgumentException;
 
 /**
  * 路由规则收集器接口
- * 此接口集成了迭代器接口，由此可以使用 foreach 遍历实现收集器接口的类
+ * 此接口继承了迭代器接口，所以可以使用 foreach 遍历收集器实例
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
@@ -122,7 +122,7 @@ interface CollectorInterface extends Iterator
     public function options(string $pattern, $handler): CollectorInterface;
 
     /**
-     * 添加一条请求方法任意的路由映射
+     * 添加一条请求方法为任意的路由映射
      *
      * @param  string          $pattern 路由匹配规则
      * @param  callable|string $handler 路由处理器

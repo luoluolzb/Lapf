@@ -13,26 +13,26 @@ use \BadMethodCallException;
 class DispatchResult
 {
     /**
-     * 路由调度结果状态码：无（未开始匹配）
+     * 调度结果状态码：无（未开始匹配）
      *
      * 应该用此作为状态码初始值
      */
-    public const NONE = 0;
+    public const NONE = 'NONE';
 
     /**
-     * 路由调度结果状态码：没找到当前请求的处理器
+     * 调度结果状态码：没找到当前请求的处理器
      */
-    public const NOT_FOUND = 1;
+    public const NOT_FOUND = 'NOT_FOUND';
     
     /**
-     * 路由调度结果状态码：找到当前请求的处理器，但是请求方法不允许
+     * 调度结果状态码：找到当前请求的处理器，但是请求方法不允许
      */
-    public const METHOD_NOT_ALLOWED = 2;
+    public const METHOD_NOT_ALLOWED = 'METHOD_NOT_ALLOWED';
     
     /**
-     * 路由调度结果状态码：找到匹配的处理器
+     * 调度结果状态码：找到匹配的处理器
      */
-    public const FOUND = 3;
+    public const FOUND = 'FOUND';
 
     /**
      * 调度结果状态码
@@ -43,7 +43,7 @@ class DispatchResult
      * - METHOD_NOT_ALLOWED
      * - FOUND
      *
-     * @var int
+     * @var string
      */
     private $statusCode;
 
@@ -85,9 +85,9 @@ class DispatchResult
     /**
      * 获取路由调度结果状态码
      *
-     * @return int 路由调度状态码
+     * @return string 调度结果状态码
      */
-    public function getStatusCode(): int
+    public function getStatusCode(): string
     {
         return $this->statusCode;
     }
@@ -140,11 +140,11 @@ class DispatchResult
     /**
      * 设置状态码
      *
-     * @param int $statusCode 状态码
+     * @param string $statusCode 状态码
      *
      * @return void
      */
-    public function setStatusCode(int $statusCode): void
+    public function setStatusCode(string $statusCode): void
     {
         $this->statusCode = $statusCode;
     }

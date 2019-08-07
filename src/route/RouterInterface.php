@@ -49,14 +49,20 @@ interface RouterInterface extends CollectorInterface
     /**
      * 设置405错误请求处理
      *
-     * @param callable $handler 处理器
+     * @param callable|string $handler 处理器
+     *
+     * @throws InvalidArgumentException 处理器类型错误，必须是可调用的结构
+     * @return void
      */
-    public function setMethodNotAllowedHandler(callable $handler): void;
+    public function setMethodNotAllowedHandler($handler): void;
 
     /**
      * 设置404错误请求处理
      *
-     * @param callable $handler 处理器
+     * @param callable|string $handler 处理器
+     *
+     * @throws InvalidArgumentException 处理器类型错误，必须是可调用的结构
+     * @return void
      */
-    public function setNotFoundHandler(callable $handler): void;
+    public function setNotFoundHandler($handler): void;
 }

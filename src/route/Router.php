@@ -6,6 +6,7 @@ namespace Lqf\Route;
 
 use \UnexpectedValueException;
 use \RuntimeException;
+use \InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Relay\Relay;
@@ -35,14 +36,14 @@ class Router extends Collector implements RouterInterface
     /**
      * 405错误处理器
      *
-     * @var null|callable
+     * @var callable|string
      */
     private $methodNotAllowedHandler;
 
     /**
      * 404错误处理器
      *
-     * @var null|callable
+     * @var callable|string
      */
     private $notFoundHandler;
 
@@ -111,7 +112,7 @@ class Router extends Collector implements RouterInterface
                 break;
         }
 
-        // 将处理器放到中间件队列末尾
+        // 将路由处理器放到中间件队列末尾
         $this->middlewareQueue[] = function (
             ServerRequestInterface $request,
             $next
@@ -131,6 +132,7 @@ class Router extends Collector implements RouterInterface
             }
         };
 
+        // 调度中间件队列
         $relay = new Relay($this->middlewareQueue, new MiddlewareResolver);
         $response = $relay->handle($request);
 
@@ -149,16 +151,22 @@ class Router extends Collector implements RouterInterface
     /**
      * @see RouteInterface::setMethodNotAllowedHandler
      */
-    public function setMethodNotAllowedHandler(callable $handler): void
+    public function setMethodNotAllowedHandler($handler): void
     {
+        if (!\is_callable($handler) && !\is_string($handler)) {
+            throw new InvalidArgumentException("The handler must be callable");
+        }
         $this->methodNotAllowedHandler = $handler;
     }
 
     /**
      * @see RouteInterface::setNotFoundHandler
      */
-    public function setNotFoundHandler(callable $handler): void
+    public function setNotFoundHandler($handler): void
     {
+        if (!\is_callable($handler) && !\is_string($handler)) {
+            throw new InvalidArgumentException("The handler must be callable");
+        }
         $this->notFoundHandler = $handler;
     }
 }

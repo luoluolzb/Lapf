@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Lqf\Route;
 
 /**
- * 路由规则收集 trait
- * 继承 RouteInterface 的类可以使用此 trait
+ * 路由规则收集器 trait
+ * 继承 CollectorInterface 的类可以使用此 trait
  *
  * @author luoluolzb <luoluolzb@163.com>
  */
