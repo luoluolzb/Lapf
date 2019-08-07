@@ -20,25 +20,39 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-// 自己注册错误处理，框架不接管
-$whoops = new \Whoops\Run;
-$whoops->appendHandler(new \Whoops\Handler\PrettyPageHandler);
-$whoops->register();
-
 // 注入框架依赖
 AppFactory::bindPsr11Container(new Container);
 AppFactory::bindPsr17Factory(new Psr17Factory);
 AppFactory::bindEnv(new Env($_SERVER));
 $app = AppFactory::create();
 
+// 加载配置文件
+$config = $app->getConfig();
+$config->loadAndMerge(__DIR__ . '/config.php');
+
+// 自己注册错误处理，框架不接管
+$whoops = new \Whoops\Run;
+if ($app->isDebug()) {  // 调试模式
+    $whoops->appendHandler(new \Whoops\Handler\PrettyPageHandler);
+} else {  // 生产模式
+    // 应该添加 Whoops\Handler\CallbackHandler
+    // 注入自定义的处理器：如写入错误信息到日志或发送邮件等
+    $callbackHandler = new \Whoops\Handler\CallbackHandler(function ($exception, $inspector, $run) {
+        error_log($exception->getMessage());
+    });
+    $whoops->appendHandler($callbackHandler);
+}
+$whoops->register();
+
 // 注入依赖
 $container = $app->getContainer();
 
-$container->set('pdo', function (Container $c) {
+$container->set('pdo', function (Container $c) use ($config) {
+    $c = $config->get('database');
     return new \PDO(
-        "mysql:host=localhost;port=3306;dbname=test;charset=utf8;",
-        'root',
-        '123456'
+        "{$c['type']}:host={$c['host']};port={$c['port']};dbname={$c['dbname']};charset={$c['charset']};",
+        $c['user'],
+        $c['password']
     );
 });
 
@@ -53,12 +67,12 @@ $router->map('GET', '/', function (Request $request, Response $response): Respon
 });
 
 // 抛出路由映射已经存在的异常
-try {
-    $router->get('/', function (Request $request, Response $response): Response {
-        return $response;
-    });
-} catch (\RuntimeException $e) {
-}
+// try {
+//     $router->get('/', function (Request $request, Response $response): Response {
+//         return $response;
+//     });
+// } catch (\RuntimeException $e) {
+// }
 
 $router->any('/hello[/{name:\w+}]', function (Request $request, Response $response, array $params): Response {
     $name = $params['name'] ?? 'lqf';
@@ -211,6 +225,23 @@ class IndexController
 
 $router->get('/index/get', 'IndexController::get');
 $router->get('/index/post', 'IndexController::post');
+
+// -------------- 测试配置 --------------
+
+$router->get('/config/all', function (Request $request, Response $response) use ($config) {
+    $response->getBody()->write(json_encode($config->all()));
+    return $response;
+});
+
+$router->get('/config/database', function (Request $request, Response $response) use ($config) {
+    $response->getBody()->write(json_encode($config->get('database')));
+    return $response; 
+});
+
+$router->get('/config/dbname', function (Request $request, Response $response) use ($config) {
+    $response->getBody()->write(json_encode($config->get('database.dbname')));
+    return $response; 
+});
 
 // 执行应用
 $app->start();

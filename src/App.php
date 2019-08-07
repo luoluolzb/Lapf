@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lqf;
 
 use \RuntimeException;
+use Lqf\Config\Config;
 use Lqf\Route\Router;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
@@ -82,6 +83,13 @@ class App
      * @var ResponseInterface
      */
     private $response;
+
+    /**
+     * 配置对象
+     *
+     * @var Config
+     */
+    private $config;
     
     /**
      * 实例化应用类
@@ -104,6 +112,8 @@ class App
         $this->responseFactory = $responseFactory;
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
+
+        $this->config = new Config(__DIR__ . '/Config/defaultConfig.php');
 
         $this->router = new Router();
         $this->router->setMethodNotAllowedHandler(function (
@@ -164,6 +174,16 @@ class App
     }
 
     /**
+     * 获取应用的配置对象
+     *
+     * @return Config
+     */
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    /**
      * 从应用容器取出一个实体
      *
      * @param  mixed $id 实体标识符
@@ -197,6 +217,16 @@ class App
     public function __get($id)
     {
         return $this->container->get($id);
+    }
+
+    /**
+     * 判断当前是否为 debug 模式
+     *
+     * @return boolean
+     */
+    public function isDebug(): bool
+    {
+        return $this->config->get('debug');
     }
 
     /**

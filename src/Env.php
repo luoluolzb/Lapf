@@ -13,6 +13,8 @@ use \RuntimeException;
  * 在之后不能修改，只能读取
  *
  * 你可以继承此类让它可以从配置文件（如.env）读取参数
+ *
+ * @author luoluolzb <luoluolzb@163.com>
  */
 class Env
 {
