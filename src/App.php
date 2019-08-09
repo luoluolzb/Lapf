@@ -115,7 +115,7 @@ class App
 
         $this->config = new Config(__DIR__ . '/Config/defaultConfig.php');
 
-        $this->router = new Router();
+        $this->router = new Router($responseFactory);
         $this->router->setMethodNotAllowedHandler(function (
             RequestInterface $request,
             ResponseInterface $response,
@@ -221,6 +221,7 @@ class App
 
     /**
      * 判断当前是否为 debug 模式
+     * 相当于 $app->getConfig()->get('debug')
      *
      * @return boolean
      */
@@ -237,10 +238,7 @@ class App
     public function start(): void
     {
         $this->request = $this->getRequest();
-        $this->response = $this->router->dispatch(
-            $this->request,
-            $this->responseFactory->createResponse()
-        );
+        $this->response = $this->router->dispatch($this->request);
         $this->sendResponse($this->response);
     }
 
