@@ -10,6 +10,10 @@ use \Iterator;
 /**
  * 配置接口
  *
+ * 继成了 ArrayAccess 接口可以用数组式访问
+ * 继承了 Iterator 接口可以使用 foreach 遍历数据
+ * 配置项的 key 可以使用点号分割多层进行访问，如 'db.host'
+ *
  * @author luoluolzb <luoluolzb@163.com>
  */
 interface ConfigInterface extends ArrayAccess, Iterator

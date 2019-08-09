@@ -8,7 +8,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Lqf\AppFactory;
 use Lqf\Env;
-use Lqf\Route\Router;
+use Lqf\Route\Collector;
 use luoluolzb\di\Container;
 
 use Nyholm\Psr7\ServerRequest as Request;
@@ -24,7 +24,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 AppFactory::bindPsr11Container(new Container);
 AppFactory::bindPsr17Factory(new Psr17Factory);
 AppFactory::bindEnv(new Env($_SERVER));
-$app = AppFactory::create();
+$app = AppFactory::getInstance();
 
 // 加载配置文件
 $config = $app->getConfig();
@@ -37,7 +37,7 @@ if ($app->isDebug()) {  // 调试模式
 } else {  // 生产模式
     // 应该添加 Whoops\Handler\CallbackHandler
     // 注入自定义的处理器：如写入错误信息到日志或发送邮件等
-    $callbackHandler = new \Whoops\Handler\CallbackHandler(function ($exception, $inspector, $run) {
+    $callbackHandler = new \Whoops\Handler\CallbackHandler(function (\Exception $exception, $inspector, $run) {
         error_log($exception->getMessage());
     });
     $whoops->appendHandler($callbackHandler);
@@ -67,12 +67,12 @@ $router->map('GET', '/', function (Request $request, Response $response): Respon
 });
 
 // 抛出路由映射已经存在的异常
-// try {
-//     $router->get('/', function (Request $request, Response $response): Response {
-//         return $response;
-//     });
-// } catch (\RuntimeException $e) {
-// }
+ try {
+     $router->get('/', function (Request $request, Response $response): Response {
+         return $response;
+     });
+ } catch (\RuntimeException $e) {
+ }
 
 $router->any('/hello[/{name:\w+}]', function (Request $request, Response $response, array $params): Response {
     $name = $params['name'] ?? 'lqf';
@@ -82,8 +82,8 @@ $router->any('/hello[/{name:\w+}]', function (Request $request, Response $respon
 
 // -------------- 测试路由分组 --------------
 
-$router->group('/abc', function (Router $router) {
-    $router->get('/ddd', function (Request $request, Response $response): Response {
+$router->group('/abc', function (Collector $collector) {
+    $collector->get('/ddd', function (Request $request, Response $response): Response {
         $response->getBody()->write('ddd');
         return $response;
     })->get('/eee', function (Request $request, Response $response): Response {
@@ -92,9 +92,8 @@ $router->group('/abc', function (Router $router) {
     })->get('/fff', function (Request $request, Response $response): Response {
         $response->getBody()->write('fff');
         return $response;
-    });
-    $router->group('/ghi', function (Router $router) {
-        $router->get('/jjj', function (Request $request, Response $response): Response {
+    })->group('/ghi', function (Collector $collector) {
+        $collector->get('/jjj', function (Request $request, Response $response): Response {
             $response->getBody()->write('jjj');
             return $response;
         })->get('/kkk', function (Request $request, Response $response): Response {
@@ -229,17 +228,17 @@ $router->get('/index/post', 'IndexController::post');
 // -------------- 测试配置 --------------
 
 $router->get('/config/all', function (Request $request, Response $response) use ($config) {
-    $response->getBody()->write(json_encode($config->all()));
+    $response->getBody()->write(\json_encode($config->all()));
     return $response;
 });
 
 $router->get('/config/database', function (Request $request, Response $response) use ($config) {
-    $response->getBody()->write(json_encode($config->get('database')));
+    $response->getBody()->write(\json_encode($config->get('database')));
     return $response; 
 });
 
 $router->get('/config/dbname', function (Request $request, Response $response) use ($config) {
-    $response->getBody()->write(json_encode($config->get('database.dbname')));
+    $response->getBody()->write(\json_encode($config->get('database.dbname')));
     return $response; 
 });
 

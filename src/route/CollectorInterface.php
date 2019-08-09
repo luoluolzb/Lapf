@@ -131,4 +131,14 @@ interface CollectorInterface extends Iterator
      * @return CollectorInterface  对象本身
      */
     public function any(string $pattern, $handler): CollectorInterface;
+
+    /**
+     * 添加一个路由组
+     *
+     * @param  string   $prefix     路由组前缀
+     * @param  callable $addHandler 路由添加器, 第一个参数为收集器实例本身
+     *
+     * @return CollectorInterface
+     */
+    public function group(string $prefix, callable $addHandler): CollectorInterface;
 }

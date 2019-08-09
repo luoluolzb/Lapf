@@ -9,6 +9,7 @@ use \RuntimeException;
 use \InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Relay\Relay;
 
 /**
@@ -19,12 +20,11 @@ use Relay\Relay;
 class Router extends Collector implements RouterInterface
 {
     /**
-     * 路由分组前缀
-     * 用于添加路由分组
+     * psr-7响应对象创建工厂
      *
-     * @var string
+     * @var ResponseFactoryInterface
      */
-    private $groupPrefix;
+    private $responseFactory;
 
     /**
      * 路由中间队列
@@ -49,43 +49,26 @@ class Router extends Collector implements RouterInterface
 
     /**
      * 实例化路由类
+     *
+     * @param ResponseFactoryInterface $responseFactory psr-7响应对象创建工厂
      */
-    public function __construct()
+    public function __construct(ResponseFactoryInterface $responseFactory)
     {
         parent::__construct();
-        $this->groupPrefix = '';
+        $this->responseFactory = $responseFactory;
         $this->middlewareQueue = [];
-    }
-
-    /**
-     * @see RouteInterface::map
-     */
-    public function map($method, string $pattern, $handler): CollectorInterface
-    {
-        return parent::map($method, $this->groupPrefix . $pattern, $handler);
-    }
-
-    /**
-     * @see RouteInterface::group
-     */
-    public function group(string $prefix, callable $addHandler): RouterInterface
-    {
-        $originPrefix = $this->groupPrefix;
-        $this->groupPrefix = $originPrefix . $prefix;
-        $addHandler($this);
-        $this->groupPrefix = $originPrefix;
-        return $this;
     }
     
     /**
      * @see RouteInterface::dispatch
      * @throws RuntimeException
      */
-    public function dispatch(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    public function dispatch(ServerRequestInterface $request): ResponseInterface
     {
         $dispatcher = new Dispatcher($this);
 
         $result = $dispatcher->dispatch($request);
+        $response = null;
         $handler = null;
         $params = [];
         
@@ -93,22 +76,20 @@ class Router extends Collector implements RouterInterface
             case DispatchResult::FOUND:
                 $handler = $result->getHandler();
                 $params = $result->getParams();
+                $response = $this->responseFactory->createResponse();
                 break;
             
             case DispatchResult::METHOD_NOT_ALLOWED:
                 $allowMethods = $result->getAllowMethods();
-                $response = $response->withStatus(405);
+                $response = $this->responseFactory->createResponse(405);
                 $response = $response->withHeader('Allow', implode(', ', $allowMethods));
                 $handler = $this->methodNotAllowedHandler;
                 $params = $allowMethods;
                 break;
 
             case DispatchResult::NOT_FOUND:
-                $response = $response->withStatus(404);
+                $response = $this->responseFactory->createResponse(404);
                 $handler = $this->notFoundHandler;
-                break;
-
-            default:
                 break;
         }
 

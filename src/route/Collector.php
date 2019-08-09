@@ -33,11 +33,20 @@ class Collector implements CollectorInterface
     private $rules;
 
     /**
+     * 路由分组前缀
+     * 用于添加路由分组
+     *
+     * @var string
+     */
+    private $groupPrefix;
+
+    /**
      * 实例化一个路由收集器
      */
     public function __construct()
     {
         $this->rules = [];
+        $this->groupPrefix = '';
     }
 
     /**
@@ -46,27 +55,27 @@ class Collector implements CollectorInterface
     public function map($method, string $pattern, $handler): CollectorInterface
     {
         if (\is_string($method)) {  // 只注册一个请求方法
-            $method = \strtoupper($method);
-            if (!isset(self::ALLOW_METHODS[$method])) {
-                throw new UnexpectedValueException("The request method {$method} is not allowed");
-            }
-            if (!\is_callable($handler) && !\is_string($handler)) {
-                throw new InvalidArgumentException("The handler must be callable");
-            }
-
-            $key = "{$method} {$pattern}";
-            if (isset($this->rules[$key])) {
-                throw new RuntimeException("The route rule ({$method}, {$pattern}) already exists");
-            }
-            
-            $this->rules[$key] = [$method, $pattern, $handler];
+            $this->mapOne($method, $this->groupPrefix . $pattern, $handler);
         } elseif (\is_array($method)) {  // 注册多个请求方法
+            $pattern = $this->groupPrefix . $pattern;
             foreach ($method as &$value) {
-                $this->map($value, $pattern, $handler);
+                $this->mapOne($value, $pattern, $handler);
             }
         } else {
             throw new InvalidArgumentException("The 'method' argument must be string or string[]");
         }
+        return $this;
+    }
+
+    /**
+     * @see CollectorInterface::group
+     */
+    public function group(string $prefix, callable $addHandler): CollectorInterface
+    {
+        $originPrefix = $this->groupPrefix;
+        $this->groupPrefix = $originPrefix . $prefix;
+        $addHandler($this);
+        $this->groupPrefix = $originPrefix;
         return $this;
     }
 
@@ -108,5 +117,23 @@ class Collector implements CollectorInterface
     public function valid()
     {
         return false !== \current($this->rules);
+    }
+
+    public function mapOne($method, string $pattern, $handler): void
+    {
+        $method = \strtoupper($method);
+        if (!isset(self::ALLOW_METHODS[$method])) {
+            throw new UnexpectedValueException("The request method {$method} is not allowed");
+        }
+        if (!\is_callable($handler) && !\is_string($handler)) {
+            throw new InvalidArgumentException("The handler must be callable");
+        }
+
+        $key = "{$method} {$pattern}";
+        if (isset($this->rules[$key])) {
+            throw new RuntimeException("The route rule ({$method}, {$pattern}) already exists");
+        }
+
+        $this->rules[$key] = [$method, $pattern, $handler];
     }
 }
