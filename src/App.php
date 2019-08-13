@@ -249,23 +249,27 @@ class App
      */
     private function getRequest(): ServerRequestInterface
     {
+        $serverParams = $this->env->server();
+
         // 构建请求uri对象
-        $requestUri = $this->env->get('REQUEST_URI');
-        $protocol = $this->env->get('SERVER_PROTOCOL');
+        $requestUri = $serverParams['REQUEST_URI'];
+        $protocol = $serverParams['SERVER_PROTOCOL'];
         $scheme = \strtolower(\explode('/', $protocol)[0]);
-        $host = $this->env->get('HTTP_HOST');
+        $host = $serverParams['HTTP_HOST'];
 
         $fullRawUri = "{$scheme}://{$host}{$requestUri}";
         $uri = $this->uriFactory->createUri($fullRawUri);
 
         // 构建请求对象
-        $requestMethod = $this->env->get('REQUEST_METHOD');
-        $request = $this->serverRequestFactory->createServerRequest($requestMethod, $uri);
+        $requestMethod = $serverParams['REQUEST_METHOD'];
+        $request = $this->serverRequestFactory->createServerRequest($requestMethod, $uri, $serverParams);
+        \parse_str($uri->getQuery(), $queryParams);
+        $request = $request->withQueryParams($queryParams);
 
         // 设置请求头
         if (!\function_exists('\getallheaders')) { // apache
             $headers = [];
-            foreach ($_SERVER as $name => $value) {
+            foreach ($serverParams as $name => &$value) {
                 if (\substr($name, 0, 5) == 'HTTP_') {
                     $name = \ucwords(\strtolower(\str_replace('_', ' ', \substr($name, 5))));
                     $name = \str_replace(' ', '-', $name);
@@ -292,6 +296,36 @@ class App
                 $request = $request->withParsedBody($parsedBody);
             }
         }
+
+        // 设置上传文件
+        if (\strcasecmp($requestMethod, 'POST') === 0) {
+            $uploadedFiles = [];
+            foreach ($this->env->files() as $input => &$value) {
+                if (\is_array($value['error'])) { // 多个文件
+                    foreach ($value['error'] as $i => $error) {
+                        $uploadedFiles[] = $this->uploadedFileFactory->createUploadedFile(
+                            $this->streamFactory->createStreamFromFile($value['tmp_name'][$i]),
+                            $value['size'][$i],
+                            $value['error'][$i],
+                            $value['name'][$i],
+                            $value['type'][$i]
+                        );
+                    }
+                } else { // 单个文件
+                    $uploadedFiles[] = $this->uploadedFileFactory->createUploadedFile(
+                        $this->streamFactory->createStreamFromFile($value['tmp_name']),
+                        $value['size'],
+                        $value['error'],
+                        $value['name'],
+                        $value['type']
+                    );
+                }
+            }
+            $request = $request->withUploadedFiles($uploadedFiles);
+        }
+
+        // 设置cookie
+        $request = $request->withCookieParams($this->env->cookie());
         
         return $request;
     }

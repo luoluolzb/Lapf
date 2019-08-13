@@ -9,82 +9,98 @@ use \RuntimeException;
 /**
  * 环境类
  *
- * 为了安全考虑，所有的环境参数只能在实例化类的时候一次性导入
- * 在之后不能修改，只能读取
- *
- * 你可以继承此类让它可以从配置文件（如.env）读取参数
- *
  * @author luoluolzb <luoluolzb@163.com>
  */
 class Env
 {
     /**
-     * 框架必要的运行环境参数
-     */
-    public const REQUIRE_PARAMS = [
-        'HTTP_HOST',
-        'REQUEST_URI',
-        'REQUEST_METHOD',
-        'SERVER_PROTOCOL',
-    ];
-
-    /**
-     * 环境参数表
+     * 服务器和执行环境信息，一般从 $_SERVER 获取
      *
      * @var array
      */
-    protected $params;
+    private $server;
+
+    /**
+     * 环境参数，一般从 $_ENV 获取
+     *
+     * @var array
+     */
+    private $env;
+
+    /**
+     * cookie 参数，一般从 $_COOKIE 获取
+     *
+     * @var array
+     */
+    private $cookie;
+
+    /**
+     * HTTP 上传文件信息，一般从 $_FILES 获取
+     *
+     * @var array
+     */
+    private $files;
 
     /**
      * 实例化环境类
-     *
-     * @param array $params 环境参数
      */
-    public function __construct(array $params)
-    {
-        $this->params = $params;
-
-        // 检测必要运行环境参数
-        foreach (self::REQUIRE_PARAMS as $name) {
-            if (!isset($this->params[$name])) {
-                throw new RuntimeException("Lack of necessary environment parameter: {$name}");
-            }
-        }
+    public function __construct(
+        array $server,
+        array $env,
+        array $cookie,
+        array $files
+    ) {
+        $this->server = $server;
+        $this->env    = $env;
+        $this->cookie = $cookie;
+        $this->files  = $files;
     }
 
     /**
-     * 获取某个环境参数
+     * 获取一个或全部服务器参数
      *
-     * @param mixed $name 参数名
+     * @param  string|null $name 参数名，默认null获取全部
      *
-     * @return mixed 参数值
+     * @return mixed
      */
-    public function get($name)
+    public function server(string $name = null)
     {
-        return $this->params[$name] ?? null;
+        return isset($name) ? ($this->server[$name] ?? null) : $this->server;
     }
 
     /**
-     * 判断是否有某个环境参数
+     * 获取一个或全部环境参数
      *
-     * @param string $name 环境参数名称
+     * @param  string|null $name 参数名，默认null获取全部
      *
-     * @return bool 是否存在
+     * @return mixed
      */
-    public function has($name): bool
+    public function env(string $name = null)
     {
-        return isset($this->params[$name]);
+        return isset($name) ? ($this->env[$name] ?? null) : $this->env;
     }
 
     /**
-     * 魔术方法：获取某个环境参数
+     * 获取一个或全部cookie参数
      *
-     * @param mixed $name 参数名
+     * @param  string|null $name 参数名，默认null获取全部
      *
-     * @return mixed 参数值
+     * @return mixed
      */
-    public function __get($name)
+    public function cookie(string $name = null)
     {
-        return $this->get($name);
+        return isset($name) ? ($this->cookie[$name] ?? null) : $this->cookie;
+    }
+
+    /**
+     * 获取一个或上传文件信息
+     *
+     * @param  string|null $name 参数名，默认null获取全部
+     *
+     * @return mixed
+     */
+    public function files(string $name = null)
+    {
+        return isset($name) ? ($this->files[$name] ?? null) : $this->files;
     }
 }

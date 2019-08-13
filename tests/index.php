@@ -23,7 +23,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 // 注入框架依赖
 AppFactory::bindPsr11Container(new Container);
 AppFactory::bindPsr17Factory(new Psr17Factory);
-AppFactory::bindEnv(new Env($_SERVER));
+AppFactory::bindEnv(new Env($_SERVER, $_ENV, $_COOKIE, $_FILES));
 $app = AppFactory::getInstance();
 
 // 加载配置文件
@@ -127,12 +127,19 @@ $router->any('/request_body_stream', function (Request $request, Response $respo
     return $response;
 });
 
+$router->any('/query_params', function (Request $request, Response $response): Response {
+    $queryParams = $request->getQueryParams();
+    $response->getBody()->write(\json_encode($queryParams));
+    return $response;
+});
+
 // -------------- 测试操作响应对象 --------------
 
 $router->any('/response', function (Request $request, Response $response): Response {
-    $response = $response->withHeader('Server', 'lqf');
+    $response = $response->withHeader('framework', 'lqf');
     $body = $response->getBody();
-    $body->write("hello");
+    $body->write("StatusCode: " . $response->getStatusCode());
+    $body->write(" ReasonPhrase: " . $response->getReasonPhrase());
     return $response;
 });
 
@@ -240,6 +247,19 @@ $router->get('/config/database', function (Request $request, Response $response)
 $router->get('/config/dbname', function (Request $request, Response $response) use ($config) {
     $response->getBody()->write(\json_encode($config->get('database.dbname')));
     return $response; 
+});
+
+// -------------- 测试文件上传 --------------
+
+$router->post('/fileupload', function (Request $request, Response $response) use ($config) {
+    $uploadedFiles = $request->getUploadedFiles();
+    foreach ($uploadedFiles as $key => $uploadedFile) {
+        if (\UPLOAD_ERR_OK === $uploadedFile->getError()) {
+            $uploadedFile->moveTo(__DIR__ . '/upload/' . $uploadedFile->getClientFilename());
+        }
+    }
+    $response->getBody()->write(\var_export($uploadedFiles, true));
+    return $response;
 });
 
 // 执行应用
