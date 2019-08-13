@@ -30,6 +30,7 @@ interface RouterInterface extends CollectorInterface
      *
      * @param  mixed $middleware 中间件实例或类名
      *
+     * @throws InvalidArgumentException 参数类型必须是中间件实例或类名
      * @return RouterInterface
      */
     public function middleware($middleware): RouterInterface;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lqf\Route;
@@ -108,7 +109,6 @@ class DispatchResult
     }
     
     /**
-     * 如果状态码为 METHOD_NOT_ALLOWED，返回允许的请求方法列表
      * 如果状态码为 METHOD_NOT_ALLOWED 时，返回允许的请求方法列表
      *
      * @throws BadMethodCallException 状态码不匹配
@@ -123,7 +123,6 @@ class DispatchResult
     }
 
     /**
-     * 如果状态码为 FOUND ，返回路由中的参数
      * 如果状态码为 FOUND 时，返回路由中的参数
      *
      * @throws BadMethodCallException 状态码不匹配

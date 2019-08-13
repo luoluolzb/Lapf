@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lqf\Route;
@@ -119,14 +120,20 @@ class Collector implements CollectorInterface
         return false !== \current($this->rules);
     }
 
-    public function mapOne($method, string $pattern, $handler): void
+    /**
+     * 添加一条请求方法的路由映射
+     *
+     * @param string          $method  允许的一个或多个请求方法
+     * @param string          $pattern 路由匹配规则
+     * @param callable|string $handler 路由处理器
+     *
+     * @throws RuntimeException         路由异常
+     */
+    public function mapOne(string $method, string $pattern, $handler): void
     {
         $method = \strtoupper($method);
         if (!isset(self::ALLOW_METHODS[$method])) {
             throw new UnexpectedValueException("The request method {$method} is not allowed");
-        }
-        if (!\is_callable($handler) && !\is_string($handler)) {
-            throw new InvalidArgumentException("The handler must be callable");
         }
 
         $key = "{$method} {$pattern}";

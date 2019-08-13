@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lqf\Route;
@@ -45,7 +46,7 @@ interface CollectorInterface extends Iterator
     public function map($method, string $pattern, $handler): CollectorInterface;
 
     /**
-     * 添加一条请求方法为GET的路由映射
+     * 添加一条请求方法为 GET 的路由映射
      *
      * @param  string          $pattern 路由匹配规则
      * @param  callable|string $handler 路由处理器
@@ -56,7 +57,7 @@ interface CollectorInterface extends Iterator
     public function get(string $pattern, $handler): CollectorInterface;
     
     /**
-     * 添加一条请求方法为 GET 的路由映射
+     * 添加一条请求方法为 POST 的路由映射
      *
      * @param  string          $pattern 路由匹配规则
      * @param  callable|string $handler 路由处理器

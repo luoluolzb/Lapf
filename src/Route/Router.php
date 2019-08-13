@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Lqf\Route;
 
-use \UnexpectedValueException;
 use \RuntimeException;
 use \InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Server\MiddlewareInterface;
 use Relay\Relay;
 
 /**
@@ -74,8 +74,8 @@ class Router extends Collector implements RouterInterface
         
         switch ($result->getStatusCode()) {
             case DispatchResult::FOUND:
-                $handler = $result->getHandler();
-                $params = $result->getParams();
+                $handler  = $result->getHandler();
+                $params   = $result->getParams();
                 $response = $this->responseFactory->createResponse();
                 break;
             
@@ -83,13 +83,13 @@ class Router extends Collector implements RouterInterface
                 $allowMethods = $result->getAllowMethods();
                 $response = $this->responseFactory->createResponse(405);
                 $response = $response->withHeader('Allow', implode(', ', $allowMethods));
-                $handler = $this->methodNotAllowedHandler;
-                $params = $allowMethods;
+                $handler  = $this->methodNotAllowedHandler;
+                $params   = $allowMethods;
                 break;
 
             case DispatchResult::NOT_FOUND:
                 $response = $this->responseFactory->createResponse(404);
-                $handler = $this->notFoundHandler;
+                $handler  = $this->notFoundHandler;
                 break;
         }
 
@@ -125,6 +125,9 @@ class Router extends Collector implements RouterInterface
      */
     public function middleware($middleware): RouterInterface
     {
+        if (\is_subclass_of($middleware, MiddlewareInterface::class)) {
+            throw new InvalidArgumentException("The middleware must be subclass of MiddlewareInterface");
+        }
         $this->middlewareQueue[] = $middleware;
         return $this;
     }

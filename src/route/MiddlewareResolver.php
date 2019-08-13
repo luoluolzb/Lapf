@@ -11,6 +11,10 @@ namespace Lqf\Route;
  */
 class MiddlewareResolver
 {
+    /**
+     * @param $entry
+     * @return mixed
+     */
     public function __invoke($entry)
     {
         if (\is_string($entry)) {
