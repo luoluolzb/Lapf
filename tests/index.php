@@ -7,24 +7,15 @@ namespace tests;
 require __DIR__ . '/../vendor/autoload.php';
 
 use Lqf\AppFactory;
-use Lqf\Env;
 use Lqf\Route\Collector;
-use luoluolzb\di\Container;
-
 use Nyholm\Psr7\ServerRequest as Request;
 use Nyholm\Psr7\Response;
-use Nyholm\Psr7\Factory\Psr17Factory;
-
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-// 注入框架依赖
-AppFactory::bindPsr11Container(new Container);
-AppFactory::bindPsr17Factory(new Psr17Factory);
-AppFactory::bindEnv(new Env($_SERVER, $_ENV, $_COOKIE, $_FILES));
 $app = AppFactory::getInstance();
 
 // 加载配置文件

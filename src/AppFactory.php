@@ -11,6 +11,8 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\ServerRequestFactoryInterface;
+use luoluolzb\di\Container;
+use Nyholm\Psr7\Factory\Psr17Factory;
 
 /**
  * 应用创建工厂
@@ -65,6 +67,11 @@ class AppFactory
      * @var ServerRequestFactoryInterface
      */
     private static $serverRequestFactory;
+
+    /**
+     * @var mixed
+     */
+    private static $psr17Factory;
 
     /**
      * 绑定一个 Env 实例到将要创建的应用对象上
@@ -171,6 +178,7 @@ class AppFactory
      */
     public static function bindPsr17Factory($psr17Factory): void
     {
+        self::$psr17Factory = $psr17Factory;
         self::bindStreamFactory($psr17Factory);
         self::bindRequestFactory($psr17Factory);
         self::bindResponseFactory($psr17Factory);
@@ -189,6 +197,15 @@ class AppFactory
         if (isset(self::$app)) {
             return self::$app;
         } else {
+            if (!isset(self::$env)) {
+                self::bindEnv(new Env($_SERVER, $_ENV, $_COOKIE, $_FILES));
+            }
+            if (!isset(self::$container)) {
+                self::bindPsr11Container(new Container());
+            }
+            if (!isset(self::$psr17Factory)) {
+                self::bindPsr17Factory(new Psr17Factory());
+            }
             return $app = new App(
                 self::$env,
                 self::$container,
