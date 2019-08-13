@@ -125,7 +125,7 @@ class Router extends Collector implements RouterInterface
      */
     public function middleware($middleware): RouterInterface
     {
-        if (\is_subclass_of($middleware, MiddlewareInterface::class)) {
+        if (!\is_subclass_of($middleware, MiddlewareInterface::class)) {
             throw new InvalidArgumentException("The middleware must be subclass of MiddlewareInterface");
         }
         $this->middlewareQueue[] = $middleware;

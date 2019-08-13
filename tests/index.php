@@ -17,6 +17,7 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
@@ -108,26 +109,38 @@ $router->group('/abc', function (Collector $collector) {
 $router->get('/uri', function (Request $request, Response $response): Response {
     $body = $response->getBody();
     $body->write('<pre>');
-    $body->write(var_export($_SERVER, true));
+    $body->write(\var_export($_SERVER, true));
     $uri = $request->getUri();
     $body->write((string)$uri);
     $body->write('</pre>');
     return $response;
 });
 
-$router->any('/request_header', function (Request $request, Response $response): Response {
+$router->get('/request_headers', function (Request $request, Response $response): Response {
     $headers = $request->getHeaders();
     $response->getBody()->write(\json_encode($headers));
     return $response;
 });
 
-$router->any('/request_body_stream', function (Request $request, Response $response): Response {
+$router->get('/request_header', function (Request $request, Response $response): Response {
+    $header = $request->getHeader('User-Agent');
+    $response->getBody()->write(\json_encode($header));
+    return $response;
+});
+
+$router->get('/request_header_line', function (Request $request, Response $response): Response {
+    $headerLine = $request->getHeaderLine('User-Agent');
+    $response->getBody()->write($headerLine);
+    return $response;
+});
+
+$router->get('/request_body_stream', function (Request $request, Response $response): Response {
     $stream = $request->getBody();
     var_dump((string)$stream);
     return $response;
 });
 
-$router->any('/query_params', function (Request $request, Response $response): Response {
+$router->get('/query_params', function (Request $request, Response $response): Response {
     $queryParams = $request->getQueryParams();
     $response->getBody()->write(\json_encode($queryParams));
     return $response;
@@ -135,15 +148,12 @@ $router->any('/query_params', function (Request $request, Response $response): R
 
 // -------------- 测试操作响应对象 --------------
 
-$router->any('/response', function (Request $request, Response $response): Response {
-    $response = $response->withHeader('framework', 'lqf');
-    $body = $response->getBody();
-    $body->write("StatusCode: " . $response->getStatusCode());
-    $body->write(" ReasonPhrase: " . $response->getReasonPhrase());
-    return $response;
+$router->get('/response', function (Request $request, Response $response): Response {
+    $response->getBody()->write($response->getStatusCode() . ' ' . $response->getReasonPhrase());
+    return $response->withHeader('framework', 'lqf');
 });
 
-$router->post('/post', function (Request $request, Response $response): Response {
+$router->any('/body_params', function (Request $request, Response $response): Response {
     $params = $request->getParsedBody();
     $response->getBody()->write(\var_export($params, true));
     return $response;
@@ -151,18 +161,16 @@ $router->post('/post', function (Request $request, Response $response): Response
 
 // -------------- 测试路由配合依赖注入容器的实际应用 --------------
 
-$router->get('/users', function (Request $request, Response $response) use ($app): Response {
-    $pdo = $app->get('pdo');
-    $stmt = $pdo->query('select * from tb_user');
+$router->get('/users', function (Request $request, Response $response) use ($container): Response {
+    $stmt = $container->get('pdo')->query('select * from tb_user');
     $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     $response->getBody()->write(\json_encode($rows));
     return $response;
 });
 
-$router->get('/user/{id:\d+}', function (Request $request, Response $response, array $params) use ($app): Response {
-    $pdo = $app->get('pdo');
+$router->get('/user/{id:\d+}', function (Request $request, Response $response, array $params) use ($container): Response {
     $id = $params['id'] ?? -1;
-    $stmt = $pdo->query("select * from tb_user where id = {$id}");
+    $stmt = $container->get('pdo')->query("select * from tb_user where id = {$id}");
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
     $response->getBody()->write(\json_encode($row));
     return $response;
@@ -175,15 +183,19 @@ class BeforeMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        // 先处理自己的
-        $request = $request->withAttribute('foo', 'bar');
-        $response = new Response();
-        $body = $response->getBody();
-        $body->write('Before ');
-        // 再处理别人的
-        $existingContent = (string) $handler->handle($request)->getBody();
-        $body->write($existingContent);
-        return $response;
+        if ($request->getUri()->getPath() === '/middleware') {
+            // 先处理自己的
+            $request = $request->withAttribute('foo', 'bar');
+            $response = new Response();
+            $body = $response->getBody();
+            $body->write('Before ');
+            // 再处理别人的
+            $existingContent = (string) $handler->handle($request)->getBody();
+            $body->write($existingContent);
+            return $response;
+        } else {
+            return $handler->handle($request);
+        }
     }
 }
 
@@ -192,20 +204,24 @@ class AfterMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        // 先处理别人的
-        $response = $handler->handle($request);
-        // 在处理自己的
-        $foo = $request->getAttribute('foo');
-        $body = $response->getBody();
-        $body->write(' After');
-        $body->write(" foo={$foo}");
-        return $response;
+        if ($request->getUri()->getPath() === '/middleware') {
+            // 先处理别人的
+            $response = $handler->handle($request);
+            // 在处理自己的
+            $foo = $request->getAttribute('foo');
+            $body = $response->getBody();
+            $body->write(' After');
+            $body->write(" foo={$foo}");
+            return $response;
+        } else {
+            return $handler->handle($request);
+        }
     }
 }
 
 // 添加中间件
-// $router->middleware(BeforeMiddleware::class);
-// $router->middleware(AfterMiddleware::class);
+$router->middleware(BeforeMiddleware::class);
+$router->middleware(AfterMiddleware::class);
 
 $router->get('/middleware', function (Request $request, Response $response) {
     $response->getBody()->write('Middleware');
@@ -229,8 +245,8 @@ class IndexController
     }
 }
 
-$router->get('/index/get', 'IndexController::get');
-$router->get('/index/post', 'IndexController::post');
+$router->get('/index/get', 'tests\IndexController::get');
+$router->post('/index/post', 'tests\IndexController::post');
 
 // -------------- 测试配置 --------------
 
@@ -251,16 +267,56 @@ $router->get('/config/dbname', function (Request $request, Response $response) u
 
 // -------------- 测试文件上传 --------------
 
+/**
+ * 将上传的文件上传目录和给它分配一个唯一的名称,以避免覆盖现有的上传文件
+ *
+ * @param string                $directory 上传文件保存目录
+ * @param UploadedFileInterface $uploaded  上传文件实例
+ * @return string 保存文件名
+ */
+function moveUploadedFile(string $directory, UploadedFileInterface $uploadedFile)
+{
+    $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+    $basename = bin2hex(\random_bytes(8));
+    $filename = sprintf('%s.%0.8s', $basename, $extension);
+
+    $uploadedFile->moveTo($directory . DIRECTORY_SEPARATOR . $filename);
+
+    return $filename;
+}
+
 $router->post('/fileupload', function (Request $request, Response $response) use ($config) {
+    $directory = $config->get('upload_directory');
     $uploadedFiles = $request->getUploadedFiles();
-    foreach ($uploadedFiles as $key => $uploadedFile) {
-        if (\UPLOAD_ERR_OK === $uploadedFile->getError()) {
-            $uploadedFile->moveTo(__DIR__ . '/upload/' . $uploadedFile->getClientFilename());
+    $body = $response->getBody();
+
+    // 处理单输入单文件上传
+    $uploadedFile = $uploadedFiles['example1'];
+    if ($uploadedFile->getError() === \UPLOAD_ERR_OK) {
+        $filename = moveUploadedFile($directory, $uploadedFile);
+        $body->write('uploaded ' . $filename . '<br/>');
+    }
+
+    // 处理多个input的name相同的文件上传
+    foreach ($uploadedFiles['example2'] as $uploadedFile) {
+        if ($uploadedFile->getError() === \UPLOAD_ERR_OK) {
+            $filename = moveUploadedFile($directory, $uploadedFile);
+            $body->write('uploaded ' . $filename . '<br/>');
         }
     }
-    $response->getBody()->write(\var_export($uploadedFiles, true));
+
+    // 处理单个带有多文件上传的input
+    foreach ($uploadedFiles['example3'] as $uploadedFile) {
+        if ($uploadedFile->getError() === \UPLOAD_ERR_OK) {
+            $filename = moveUploadedFile($directory, $uploadedFile);
+            $body->write('uploaded ' . $filename . '<br/>');
+        }
+    }
+
     return $response;
 });
+
+// ----------------------------------------
 
 // 执行应用
 $app->start();

@@ -1,4 +1,4 @@
 .idea/
 vendor/
-test/upload/
+tests/upload/
 composer.lock

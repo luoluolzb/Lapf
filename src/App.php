@@ -184,46 +184,10 @@ class App
     }
 
     /**
-     * 从应用容器取出一个实体
-     *
-     * @param  mixed $id 实体标识符
-     *
-     * @return mixed 实体
-     */
-    public function get($id)
-    {
-        return $this->container->get($id);
-    }
-
-    /**
-     * 判断应用容器是否有某个实体
-     *
-     * @param  mixed $id 实体标识符
-     *
-     * @return bool
-     */
-    public function has($id)
-    {
-        return $this->container->has($id);
-    }
-
-    /**
-     * 魔术方法：从应用容器取出一个实体
-     *
-     * @param  mixed $id 实体标识符
-     *
-     * @return mixed 实体
-     */
-    public function __get($id)
-    {
-        return $this->container->get($id);
-    }
-
-    /**
      * 判断当前是否为 debug 模式
      * 相当于 $app->getConfig()->get('debug')
      *
-     * @return boolean
+     * @return bool
      */
     public function isDebug(): bool
     {
@@ -267,20 +231,20 @@ class App
         $request = $request->withQueryParams($queryParams);
 
         // 设置请求头
-        if (!\function_exists('\getallheaders')) { // apache
+        if (!\function_exists('\getallheaders')) {
             $headers = [];
             foreach ($serverParams as $name => &$value) {
                 if (\substr($name, 0, 5) == 'HTTP_') {
-                    $name = \ucwords(\strtolower(\str_replace('_', ' ', \substr($name, 5))));
-                    $name = \str_replace(' ', '-', $name);
+                    $name = \strtolower(\str_replace('_', ' ', \substr($name, 5)));
+                    $name = \str_replace(' ', '-', \ucwords($name));
                     $headers[$name] = $value;
                 }
             }
-        } else {  // nginx
+        } else {
             $headers = \getallheaders();
         }
         foreach ($headers as $name => &$value) {
-            $request = $request->withHeader($name, $value);
+            $request = $request->withHeader($name, explode(',', $value));
         }
 
         // 构建请求正文流对象
@@ -300,10 +264,10 @@ class App
         // 设置上传文件
         if (\strcasecmp($requestMethod, 'POST') === 0) {
             $uploadedFiles = [];
-            foreach ($this->env->files() as $input => &$value) {
+            foreach ($this->env->files() as $field => &$value) {
                 if (\is_array($value['error'])) { // 多个文件
                     foreach ($value['error'] as $i => $error) {
-                        $uploadedFiles[] = $this->uploadedFileFactory->createUploadedFile(
+                        $uploadedFiles[$field][] = $this->uploadedFileFactory->createUploadedFile(
                             $this->streamFactory->createStreamFromFile($value['tmp_name'][$i]),
                             $value['size'][$i],
                             $value['error'][$i],
@@ -312,7 +276,7 @@ class App
                         );
                     }
                 } else { // 单个文件
-                    $uploadedFiles[] = $this->uploadedFileFactory->createUploadedFile(
+                    $uploadedFiles[$field] = $this->uploadedFileFactory->createUploadedFile(
                         $this->streamFactory->createStreamFromFile($value['tmp_name']),
                         $value['size'],
                         $value['error'],

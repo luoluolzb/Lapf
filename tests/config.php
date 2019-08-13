@@ -21,4 +21,6 @@ return [
 		'user' => 'root',
 		'password' => '123456',
 	],
+
+    'upload_directory' => __DIR__ . '/upload',
 ];

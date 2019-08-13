@@ -5,16 +5,30 @@
     <title>Document</title>
 </head>
 <body>
-    <form id="form1" enctype="multipart/form-data" method="post" action="/fileupload">
-        <div class="row">
-            <input type="file" name="files[]" />
-        </div>
-        <div class="row">
-            <input type="file" name="files[]" />
-        </div>
-        <div class="row">
-            <input type="submit" value="submit" />
-        </div>
+    <!-- make sure the attribute enctype is set to multipart/form-data -->
+    <form method="post" enctype="multipart/form-data" action="/fileupload">
+        <!-- upload of a single file -->
+        <p>
+            <label>Add file (single): </label><br/>
+            <input type="file" name="example1"/>
+        </p>
+
+        <!-- multiple input fields for the same input name, use brackets -->
+        <p>
+            <label>Add files (up to 2): </label><br/>
+            <input type="file" name="example2[]"/><br/>
+            <input type="file" name="example2[]"/>
+        </p>
+
+        <!-- one file input field that allows multiple files to be uploaded, use brackets -->
+        <p>
+            <label>Add files (multiple): </label><br/>
+            <input type="file" name="example3[]" multiple="multiple"/>
+        </p>
+
+        <p>
+            <input type="submit"/>
+        </p>
     </form>
 </body>
 </html>
