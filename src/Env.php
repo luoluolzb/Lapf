@@ -93,9 +93,9 @@ class Env
     }
 
     /**
-     * 获取一个或上传文件信息
+     * 获取一个或全部上传文件信息
      *
-     * @param  string|null $name 参数名，默认null获取全部
+     * @param  string|null $name input表单的name，默认null获取全部
      *
      * @return mixed
      */

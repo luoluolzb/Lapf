@@ -117,7 +117,7 @@ class App
 
         $this->router = new Router($responseFactory);
         $this->router->setMethodNotAllowedHandler(function (
-            RequestInterface $request,
+            ServerRequestInterface $request,
             ResponseInterface $response,
             array $allowMethods
         ) use ($streamFactory) {
@@ -130,7 +130,7 @@ class App
             );
         });
         $this->router->setNotFoundHandler(function (
-            RequestInterface $request,
+            ServerRequestInterface $request,
             ResponseInterface $response
         ) use ($streamFactory) {
             return $response->withBody(
@@ -176,7 +176,7 @@ class App
     /**
      * 获取应用的配置对象
      *
-     * @return Config
+     * @return Config 配置对象
      */
     public function getConfig()
     {
@@ -201,7 +201,7 @@ class App
      */
     public function start(): void
     {
-        $this->request = $this->getRequest();
+        $this->request = $this->buildRequest();
         $this->response = $this->router->dispatch($this->request);
         $this->sendResponse($this->response);
     }
@@ -211,7 +211,7 @@ class App
      *
      * @return ServerRequestInterface 服务器请求对象
      */
-    private function getRequest(): ServerRequestInterface
+    private function buildRequest(): ServerRequestInterface
     {
         $serverParams = $this->env->server();
 
@@ -244,7 +244,7 @@ class App
             $headers = \getallheaders();
         }
         foreach ($headers as $name => &$value) {
-            $request = $request->withHeader($name, explode(',', $value));
+            $request = $request->withHeader($name, \explode(',', $value));
         }
 
         // 构建请求正文流对象

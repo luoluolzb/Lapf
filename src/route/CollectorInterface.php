@@ -18,9 +18,6 @@ interface CollectorInterface extends Iterator
 {
     /**
      * 允许注册路由规则的请求方法
-     *
-     * 不要将 true 修改为 false，如果要增加减少
-     * 允许的请求方法，应该删除或者增加键值对
      */
     public const ALLOW_METHODS = [
         'GET'     => true,
@@ -137,7 +134,7 @@ interface CollectorInterface extends Iterator
      * 添加一个路由组
      *
      * @param  string   $prefix     路由组前缀
-     * @param  callable $addHandler 路由添加器, 第一个参数为收集器实例本身
+     * @param  callable $addHandler 路由添加器, 参数为收集器实例
      *
      * @return CollectorInterface
      */

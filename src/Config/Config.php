@@ -14,11 +14,7 @@ use Noodlehaus\Config as NoodlehausConfig;
 class Config extends NoodlehausConfig implements ConfigInterface
 {
     /**
-     * 从配置文件加载一个配置合并到现有配置
-     *
-     * @param  string $filePath 配置文件路径
-     *
-     * @return void
+     * @see ConfigInterface::loadAndMerge
      */
     public function loadAndMerge($filePath)
     {

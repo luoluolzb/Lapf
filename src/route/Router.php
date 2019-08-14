@@ -65,12 +65,10 @@ class Router extends Collector implements RouterInterface
      */
     public function dispatch(ServerRequestInterface $request): ResponseInterface
     {
-        $dispatcher = new Dispatcher($this);
-
-        $result = $dispatcher->dispatch($request);
+        $result   = (new Dispatcher($this))->dispatch($request);
         $response = null;
-        $handler = null;
-        $params = [];
+        $handler  = null;
+        $params   = [];
         
         switch ($result->getStatusCode()) {
             case DispatchResult::FOUND:

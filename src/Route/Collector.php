@@ -22,7 +22,7 @@ class Collector implements CollectorInterface
      *
      * 规则表结构：
      * [
-     *     "{$method}{$pattern}" => [
+     *     "{$method} {$pattern}" => [
      *         $method,
      *         $pattern,
      *         $handler,
@@ -74,7 +74,7 @@ class Collector implements CollectorInterface
     public function group(string $prefix, callable $addHandler): CollectorInterface
     {
         $originPrefix = $this->groupPrefix;
-        $this->groupPrefix = $originPrefix . $prefix;
+        $this->groupPrefix .= $prefix;
         $addHandler($this);
         $this->groupPrefix = $originPrefix;
         return $this;
@@ -121,9 +121,9 @@ class Collector implements CollectorInterface
     }
 
     /**
-     * 添加一条请求方法的路由映射
+     * 添加一条路由映射
      *
-     * @param string          $method  允许的一个或多个请求方法
+     * @param string          $method  允许的一个请求方法
      * @param string          $pattern 路由匹配规则
      * @param callable|string $handler 路由处理器
      *

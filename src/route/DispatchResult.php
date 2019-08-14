@@ -38,12 +38,6 @@ class DispatchResult
     /**
      * 调度结果状态码
      *
-     * 它的取值应该是下面几个值之一：
-     * - NONE
-     * - NOT_FOUND
-     * - METHOD_NOT_ALLOWED
-     * - FOUND
-     *
      * @var string
      */
     private $statusCode;

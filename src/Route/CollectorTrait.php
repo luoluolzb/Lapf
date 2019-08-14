@@ -73,7 +73,7 @@ trait CollectorTrait
      */
     public function any(string $pattern, $handler): CollectorInterface
     {
-        foreach (CollectorInterface::ALLOW_METHODS as $method => $value) {
+        foreach (self::ALLOW_METHODS as $method => $value) {
             $this->map($method, $pattern, $handler);
         }
         return $this;
