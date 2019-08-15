@@ -18,14 +18,12 @@ class MyClass
 }
 
 $psr17Factory = new Psr17Factory();
-$psr17Factory = new Psr17Factory();
 $uri = $psr17Factory->createUri('http://localhost/');
 $request = $psr17Factory->createRequest('GET', $uri);
 
 $collector = new RouteCollector();
 $collector->map('GET', '/', new MyClass);
-$collector->map('POST', '/', function () {
-});
+$collector->map('POST', '/', function () {});
 
 $dispatcher = new RouteDispatcher($collector);
 $result = $dispatcher->dispatch($request);
