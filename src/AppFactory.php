@@ -69,11 +69,6 @@ class AppFactory
     private static $serverRequestFactory;
 
     /**
-     * @var mixed
-     */
-    private static $psr17Factory;
-
-    /**
      * 绑定一个 Env 实例到将要创建的应用对象上
      *
      * @param  Env $env
@@ -95,6 +90,30 @@ class AppFactory
     public static function bindPsr11Container(ContainerInterface $container): void
     {
         self::$container = $container;
+    }
+
+    /**
+     * 绑定一个 psr-17 Uri 创建工厂实例到将要创建的应用对象上
+     *
+     * @param  UriFactoryInterface $factory
+     *
+     * @return void
+     */
+    public static function bindUriFactory(UriFactoryInterface $factory): void
+    {
+        self::$uriFactory = $factory;
+    }
+    
+    /**
+     * 绑定一个 psr-17 Stream 创建工厂实例到将要创建的应用对象上
+     *
+     * @param  StreamFactoryInterface $factory
+     *
+     * @return void
+     */
+    public static function bindStreamFactory(StreamFactoryInterface $factory): void
+    {
+        self::$streamFactory = $factory;
     }
 
     /**
@@ -120,30 +139,6 @@ class AppFactory
     {
         self::$responseFactory = $factory;
     }
-    
-    /**
-     * 绑定一个 psr-17 ServerRequest 创建工厂实例到将要创建的应用对象上
-     *
-     * @param  ServerRequestFactoryInterface $factory
-     *
-     * @return void
-     */
-    public static function bindServerRequestFactory(ServerRequestFactoryInterface $factory): void
-    {
-        self::$serverRequestFactory = $factory;
-    }
-    
-    /**
-     * 绑定一个 psr-17 Stream 创建工厂实例到将要创建的应用对象上
-     *
-     * @param  StreamFactoryInterface $factory
-     *
-     * @return void
-     */
-    public static function bindStreamFactory(StreamFactoryInterface $factory): void
-    {
-        self::$streamFactory = $factory;
-    }
 
     /**
      * 绑定一个 psr-17 UploadedFile 创建工厂实例到将要创建的应用对象上
@@ -156,17 +151,17 @@ class AppFactory
     {
         self::$uploadedFileFactory = $factory;
     }
-
+    
     /**
-     * 绑定一个 psr-17 Uri 创建工厂实例到将要创建的应用对象上
+     * 绑定一个 psr-17 ServerRequest 创建工厂实例到将要创建的应用对象上
      *
-     * @param  UriFactoryInterface $factory
+     * @param  ServerRequestFactoryInterface $factory
      *
      * @return void
      */
-    public static function bindUriFactory(UriFactoryInterface $factory): void
+    public static function bindServerRequestFactory(ServerRequestFactoryInterface $factory): void
     {
-        self::$uriFactory = $factory;
+        self::$serverRequestFactory = $factory;
     }
 
     /**
@@ -178,12 +173,11 @@ class AppFactory
      */
     public static function bindPsr17Factory($psr17Factory): void
     {
-        self::$psr17Factory = $psr17Factory;
+        self::bindUriFactory($psr17Factory);
         self::bindStreamFactory($psr17Factory);
         self::bindRequestFactory($psr17Factory);
         self::bindResponseFactory($psr17Factory);
         self::bindUploadedFileFactory($psr17Factory);
-        self::bindUriFactoryInterface($psr17Factory);
         self::bindServerRequestFactory($psr17Factory);
     }
 
@@ -203,9 +197,45 @@ class AppFactory
             if (!isset(self::$container)) {
                 self::bindPsr11Container(new Container());
             }
-            if (!isset(self::$psr17Factory)) {
-                self::bindPsr17Factory(new Psr17Factory());
+
+            $psr17Factory = null;
+            if (!isset(self::$uriFactory)) {
+                if (!isset($psr17Factory)) {
+                    $psr17Factory = new Psr17Factory();
+                }
+                self::bindUriFactory($psr17Factory);
             }
+            if (!isset(self::$streamFactory)) {
+                if (!isset($psr17Factory)) {
+                    $psr17Factory = new Psr17Factory();
+                }
+                self::bindStreamFactory($psr17Factory);
+            }
+            if (!isset(self::$requestFactory)) {
+                if (!isset($psr17Factory)) {
+                    $psr17Factory = new Psr17Factory();
+                }
+                self::bindRequestFactory($psr17Factory);
+            }
+            if (!isset(self::$responseFactory)) {
+                if (!isset($psr17Factory)) {
+                    $psr17Factory = new Psr17Factory();
+                }
+                self::bindResponseFactory($psr17Factory);
+            }
+            if (!isset(self::$uploadedFileFactory)) {
+                if (!isset($psr17Factory)) {
+                    $psr17Factory = new Psr17Factory();
+                }
+                self::bindUploadedFileFactory($psr17Factory);
+            }
+            if (!isset(self::$serverRequestFactory)) {
+                if (!isset($psr17Factory)) {
+                    $psr17Factory = new Psr17Factory();
+                }
+                self::bindServerRequestFactory($psr17Factory);
+            }
+            
             return $app = new App(
                 self::$env,
                 self::$container,
