@@ -53,21 +53,23 @@ $router = $app->getRouter();
 
 // -------------- 路由测试 --------------
 
-$router->map('GET', '/', function (Request $request, Response $response): Response {
+$router->map('GET', '/', function (Request $request): Response {
+    $response = new Response();
     $response->getBody()->write("welcome to use lqf");
     return $response;
 });
 
 // 抛出路由映射已经存在的异常
  try {
-     $router->get('/', function (Request $request, Response $response): Response {
+     $router->get('/', function (Request $request): Response {
          return $response;
      });
  } catch (\RuntimeException $e) {
  }
 
-$router->any('/hello[/{name:\w+}]', function (Request $request, Response $response, array $params): Response {
+$router->any('/hello[/{name:\w+}]', function (Request $request, array $params): Response {
     $name = $params['name'] ?? 'lqf';
+    $response = new Response();
     $response->getBody()->write("hello, {$name}");
     return $response;
 });
@@ -75,20 +77,25 @@ $router->any('/hello[/{name:\w+}]', function (Request $request, Response $respon
 // -------------- 测试路由分组 --------------
 
 $router->group('/abc', function (Collector $collector) {
-    $collector->get('/ddd', function (Request $request, Response $response): Response {
+    $collector->get('/ddd', function (Request $request): Response {
+        $response = new Response();
         $response->getBody()->write('ddd');
         return $response;
-    })->get('/eee', function (Request $request, Response $response): Response {
+    })->get('/eee', function (Request $request): Response {
+        $response = new Response();
         $response->getBody()->write('eee');
         return $response;
-    })->get('/fff', function (Request $request, Response $response): Response {
+    })->get('/fff', function (Request $request): Response {
+        $response = new Response();
         $response->getBody()->write('fff');
         return $response;
     })->group('/ghi', function (Collector $collector) {
-        $collector->get('/jjj', function (Request $request, Response $response): Response {
+        $collector->get('/jjj', function (Request $request): Response {
+            $response = new Response();
             $response->getBody()->write('jjj');
             return $response;
-        })->get('/kkk', function (Request $request, Response $response): Response {
+        })->get('/kkk', function (Request $request): Response {
+            $response = new Response();
             $response->getBody()->write('kkk');
             return $response;
         });
@@ -97,7 +104,8 @@ $router->group('/abc', function (Collector $collector) {
 
 // -------------- 测试操作请求对象 --------------
 
-$router->get('/uri', function (Request $request, Response $response): Response {
+$router->get('/uri', function (Request $request): Response {
+    $response = new Response();
     $body = $response->getBody();
     $body->write('<pre>');
     $body->write(\var_export($_SERVER, true));
@@ -107,31 +115,36 @@ $router->get('/uri', function (Request $request, Response $response): Response {
     return $response;
 });
 
-$router->get('/request_headers', function (Request $request, Response $response): Response {
+$router->get('/request_headers', function (Request $request): Response {
+    $response = new Response();
     $headers = $request->getHeaders();
     $response->getBody()->write(\json_encode($headers));
     return $response;
 });
 
-$router->get('/request_header', function (Request $request, Response $response): Response {
+$router->get('/request_header', function (Request $request): Response {
+    $response = new Response();
     $header = $request->getHeader('User-Agent');
     $response->getBody()->write(\json_encode($header));
     return $response;
 });
 
-$router->get('/request_header_line', function (Request $request, Response $response): Response {
+$router->get('/request_header_line', function (Request $request): Response {
+    $response = new Response();
     $headerLine = $request->getHeaderLine('User-Agent');
     $response->getBody()->write($headerLine);
     return $response;
 });
 
-$router->get('/request_body_stream', function (Request $request, Response $response): Response {
+$router->get('/request_body_stream', function (Request $request): Response {
+    $response = new Response();
     $stream = $request->getBody();
     var_dump((string)$stream);
     return $response;
 });
 
-$router->get('/query_params', function (Request $request, Response $response): Response {
+$router->get('/query_params', function (Request $request): Response {
+    $response = new Response();
     $queryParams = $request->getQueryParams();
     $response->getBody()->write(\json_encode($queryParams));
     return $response;
@@ -139,12 +152,14 @@ $router->get('/query_params', function (Request $request, Response $response): R
 
 // -------------- 测试操作响应对象 --------------
 
-$router->get('/response', function (Request $request, Response $response): Response {
+$router->get('/response', function (Request $request): Response {
+    $response = new Response();
     $response->getBody()->write($response->getStatusCode() . ' ' . $response->getReasonPhrase());
     return $response->withHeader('framework', 'lqf');
 });
 
-$router->any('/body_params', function (Request $request, Response $response): Response {
+$router->any('/body_params', function (Request $request): Response {
+    $response = new Response();
     $params = $request->getParsedBody();
     $response->getBody()->write(\var_export($params, true));
     return $response;
@@ -152,17 +167,19 @@ $router->any('/body_params', function (Request $request, Response $response): Re
 
 // -------------- 测试路由配合依赖注入容器的实际应用 --------------
 
-$router->get('/users', function (Request $request, Response $response) use ($container): Response {
+$router->get('/users', function (Request $request) use ($container): Response {
     $stmt = $container->get('pdo')->query('select * from tb_user');
     $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    $response = new Response();
     $response->getBody()->write(\json_encode($rows));
     return $response;
 });
 
-$router->get('/user/{id:\d+}', function (Request $request, Response $response, array $params) use ($container): Response {
+$router->get('/user/{id:\d+}', function (Request $request, array $params) use ($container): Response {
     $id = $params['id'] ?? -1;
     $stmt = $container->get('pdo')->query("select * from tb_user where id = {$id}");
     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+    $response = new Response();
     $response->getBody()->write(\json_encode($row));
     return $response;
 });
@@ -214,7 +231,8 @@ class AfterMiddleware implements MiddlewareInterface
 $router->middleware(BeforeMiddleware::class);
 $router->middleware(AfterMiddleware::class);
 
-$router->get('/middleware', function (Request $request, Response $response) {
+$router->get('/middleware', function (Request $request): Response {
+    $response = new Response();
     $response->getBody()->write('Middleware');
     return $response;
 });
@@ -223,14 +241,16 @@ $router->get('/middleware', function (Request $request, Response $response) {
 
 class IndexController
 {
-    public function get(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    public function get(Request $request): Response
     {
+        $response = new Response();
         $response->getBody()->write('IndexController::get');
         return $response;
     }
 
-    public function post(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    public function post(Request $request): Response
     {
+        $response = new Response();
         $response->getBody()->write('IndexController::post');
         return $response;
     }
@@ -241,17 +261,20 @@ $router->post('/index/post', 'tests\IndexController::post');
 
 // -------------- 测试配置 --------------
 
-$router->get('/config/all', function (Request $request, Response $response) use ($config) {
+$router->get('/config/all', function (Request $request) use ($config) {
+    $response = new Response();
     $response->getBody()->write(\json_encode($config->all()));
     return $response;
 });
 
-$router->get('/config/database', function (Request $request, Response $response) use ($config) {
+$router->get('/config/database', function (Request $request) use ($config) {
+    $response = new Response();
     $response->getBody()->write(\json_encode($config->get('database')));
     return $response; 
 });
 
-$router->get('/config/dbname', function (Request $request, Response $response) use ($config) {
+$router->get('/config/dbname', function (Request $request) use ($config) {
+    $response = new Response();
     $response->getBody()->write(\json_encode($config->get('database.dbname')));
     return $response; 
 });
@@ -267,18 +290,19 @@ $router->get('/config/dbname', function (Request $request, Response $response) u
  */
 function moveUploadedFile(string $directory, UploadedFileInterface $uploadedFile)
 {
-    $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
-    $basename = bin2hex(\random_bytes(8));
-    $filename = sprintf('%s.%0.8s', $basename, $extension);
+    $extension = \pathinfo($uploadedFile->getClientFilename(), \PATHINFO_EXTENSION);
+    $basename = \bin2hex(\random_bytes(8));
+    $filename = \sprintf('%s.%0.8s', $basename, $extension);
 
-    $uploadedFile->moveTo($directory . DIRECTORY_SEPARATOR . $filename);
+    $uploadedFile->moveTo($directory . \DIRECTORY_SEPARATOR . $filename);
 
     return $filename;
 }
 
-$router->post('/fileupload', function (Request $request, Response $response) use ($config) {
+$router->post('/fileupload', function (Request $request) use ($config) {
     $directory = $config->get('upload_directory');
     $uploadedFiles = $request->getUploadedFiles();
+    $response = new Response();
     $body = $response->getBody();
 
     // 处理单输入单文件上传

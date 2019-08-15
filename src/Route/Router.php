@@ -8,7 +8,6 @@ use \RuntimeException;
 use \InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Relay\Relay;
 
@@ -19,13 +18,6 @@ use Relay\Relay;
  */
 class Router extends Collector implements RouterInterface
 {
-    /**
-     * psr-7响应对象创建工厂
-     *
-     * @var ResponseFactoryInterface
-     */
-    private $responseFactory;
-
     /**
      * 路由中间队列
      *
@@ -49,13 +41,10 @@ class Router extends Collector implements RouterInterface
 
     /**
      * 实例化路由类
-     *
-     * @param ResponseFactoryInterface $responseFactory psr-7响应对象创建工厂
      */
-    public function __construct(ResponseFactoryInterface $responseFactory)
+    public function __construct()
     {
         parent::__construct();
-        $this->responseFactory = $responseFactory;
         $this->middlewareQueue = [];
     }
     
@@ -66,7 +55,6 @@ class Router extends Collector implements RouterInterface
     public function dispatch(ServerRequestInterface $request): ResponseInterface
     {
         $result   = (new Dispatcher($this))->dispatch($request);
-        $response = null;
         $handler  = null;
         $params   = [];
         
@@ -74,19 +62,15 @@ class Router extends Collector implements RouterInterface
             case DispatchResult::FOUND:
                 $handler  = $result->getHandler();
                 $params   = $result->getParams();
-                $response = $this->responseFactory->createResponse();
                 break;
             
             case DispatchResult::METHOD_NOT_ALLOWED:
                 $allowMethods = $result->getAllowMethods();
-                $response = $this->responseFactory->createResponse(405);
-                $response = $response->withHeader('Allow', implode(', ', $allowMethods));
                 $handler  = $this->methodNotAllowedHandler;
                 $params   = $allowMethods;
                 break;
 
             case DispatchResult::NOT_FOUND:
-                $response = $this->responseFactory->createResponse(404);
                 $handler  = $this->notFoundHandler;
                 break;
         }
@@ -97,15 +81,14 @@ class Router extends Collector implements RouterInterface
             $next
         ) use (
             $handler,
-            $response,
             $params
         ) {
             if (\is_string($handler)) {
                 list($controllerName, $actionName) = \explode("::", $handler);
                 $controller = new $controllerName();
-                return $controller->$actionName($request, $response, $params);
+                return $controller->$actionName($request, $params);
             } elseif (\is_callable($handler)) {
-                return $handler($request, $response, $params);
+                return $handler($request, $params);
             } else {
                 throw new RuntimeException("The route handler must be callable");
             }

@@ -115,13 +115,17 @@ class App
 
         $this->config = new Config(__DIR__ . '/Config/defaultConfig.php');
 
-        $this->router = new Router($responseFactory);
+        $this->router = new Router();
         $this->router->setMethodNotAllowedHandler(function (
             ServerRequestInterface $request,
-            ResponseInterface $response,
             array $allowMethods
-        ) use ($streamFactory) {
-            return $response->withBody(
+        ) use (
+            $responseFactory,
+            $streamFactory
+        ) {
+            return $responseFactory->createResponse(405)
+            ->withHeader('Allow', $allowMethods)
+            ->withBody(
                 $streamFactory->createStream(
                     '<title>405 Method Not Allowed</title>
                     <h1 align="center">405 Method Not Allowed</h1><hr />
@@ -130,10 +134,13 @@ class App
             );
         });
         $this->router->setNotFoundHandler(function (
-            ServerRequestInterface $request,
-            ResponseInterface $response
-        ) use ($streamFactory) {
-            return $response->withBody(
+            ServerRequestInterface $request
+        ) use (
+            $responseFactory,
+            $streamFactory
+        ) {
+            return $responseFactory->createResponse(404)
+            ->withBody(
                 $streamFactory->createStream(
                     '<title>404 Not Found</title>
                     <h1 align="center">404 Not Found</h1><hr />
