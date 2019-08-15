@@ -164,7 +164,7 @@ class AppFactory
      *
      * @return void
      */
-    public static function bindUriFactoryInterface(UriFactoryInterface $factory): void
+    public static function bindUriFactory(UriFactoryInterface $factory): void
     {
         self::$uriFactory = $factory;
     }
