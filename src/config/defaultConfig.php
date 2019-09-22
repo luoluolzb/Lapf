@@ -8,5 +8,6 @@ declare(strict_types=1);
  * @author luoluolzb <luoluolzb@163.com>
  */
 return [
+    // 调试模式开关
     'debug' => false,
 ];

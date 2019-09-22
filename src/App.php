@@ -113,7 +113,7 @@ class App
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
 
-        $this->config = new Config(__DIR__ . '/Config/defaultConfig.php');
+        $this->config = new Config(__DIR__ . '/config/defaultConfig.php');
 
         $this->router = new Router();
         $this->router->setMethodNotAllowedHandler(function (

@@ -8,6 +8,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Lqf\AppFactory;
 use Lqf\Route\Collector;
+use luoluolzb\di\Container;
 use Nyholm\Psr7\ServerRequest as Request;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
@@ -55,22 +56,24 @@ $router = $app->getRouter();
 
 $router->map('GET', '/', function (Request $request): Response {
     $response = new Response();
-    $response->getBody()->write("welcome to use lqf");
+    $response->getBody()->write("welcome to use Lqf");
     return $response;
 });
 
-// 抛出路由映射已经存在的异常
- try {
-     $router->get('/', function (Request $request): Response {
-         return $response;
-     });
+// 重复注册路由规则
+// 会抛出 RuntimeException 异常
+// 可以将 try-catch 注释掉查看效果
+try {
+    $router->get('/', function (Request $request): Response {
+        return new Response();
+    });
  } catch (\RuntimeException $e) {
  }
 
 $router->any('/hello[/{name:\w+}]', function (Request $request, array $params): Response {
-    $name = $params['name'] ?? 'lqf';
+    $name = $params['name'] ?? 'world';
     $response = new Response();
-    $response->getBody()->write("hello, {$name}");
+    $response->getBody()->write("hello, {$name}!");
     return $response;
 });
 
@@ -107,11 +110,7 @@ $router->group('/abc', function (Collector $collector) {
 $router->get('/uri', function (Request $request): Response {
     $response = new Response();
     $body = $response->getBody();
-    $body->write('<pre>');
-    $body->write(\var_export($_SERVER, true));
-    $uri = $request->getUri();
-    $body->write((string)$uri);
-    $body->write('</pre>');
+    $body->write((string)$request->getUri());
     return $response;
 });
 
@@ -136,10 +135,9 @@ $router->get('/request_header_line', function (Request $request): Response {
     return $response;
 });
 
-$router->get('/request_body_stream', function (Request $request): Response {
+$router->any('/request_body_stream', function (Request $request): Response {
     $response = new Response();
-    $stream = $request->getBody();
-    var_dump((string)$stream);
+    $response->getBody()->write((string)$request->getBody());
     return $response;
 });
 
@@ -155,7 +153,7 @@ $router->get('/query_params', function (Request $request): Response {
 $router->get('/response', function (Request $request): Response {
     $response = new Response();
     $response->getBody()->write($response->getStatusCode() . ' ' . $response->getReasonPhrase());
-    return $response->withHeader('framework', 'lqf');
+    return $response->withHeader('framework', 'Lqf');
 });
 
 $router->any('/body_params', function (Request $request): Response {
