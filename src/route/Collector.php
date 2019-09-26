@@ -127,7 +127,8 @@ class Collector implements CollectorInterface
      * @param string          $pattern 路由匹配规则
      * @param callable|string $handler 路由处理器
      *
-     * @throws RuntimeException         路由异常
+     * @throws RuntimeException 路由异常
+     * @return void
      */
     public function mapOne(string $method, string $pattern, $handler): void
     {

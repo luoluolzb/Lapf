@@ -19,7 +19,7 @@ interface RouterInterface extends CollectorInterface
     /**
      * 开始路由调度
      *
-     * @param  ServerRequestInterface  $request   客户端请求实例
+     * @param ServerRequestInterface $request 客户端请求实例
      *
      * @return ResponseInterface 响应对象
      */
@@ -28,7 +28,7 @@ interface RouterInterface extends CollectorInterface
     /**
      * 添加一个中间件
      *
-     * @param  mixed $middleware 中间件实例或类名
+     * @param mixed $middleware 中间件实例或类名
      *
      * @throws InvalidArgumentException 参数类型必须是中间件实例或类名
      * @return RouterInterface

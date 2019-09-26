@@ -76,7 +76,7 @@ interface CollectorInterface extends Iterator
     public function put(string $pattern, $handler): CollectorInterface;
     
     /**
-     * 添加一条请求方法为 DELETE 的路由
+     * 添加一条请求方法为 DELETE 的路由映射
      *
      * @param  string          $pattern 路由匹配规则
      * @param  callable|string $handler 路由处理器
@@ -98,7 +98,7 @@ interface CollectorInterface extends Iterator
     public function patch(string $pattern, $handler): CollectorInterface;
     
     /**
-     * 添加一条请求方法为 HEAD 的路由
+     * 添加一条请求方法为 HEAD 的路由映射
      *
      * @param  string          $pattern 路由匹配规则
      * @param  callable|string $handler 路由处理器
@@ -120,7 +120,7 @@ interface CollectorInterface extends Iterator
     public function options(string $pattern, $handler): CollectorInterface;
 
     /**
-     * 添加一条请求方法为任意的路由映射
+     * 添加一条请求方法为任意的路由映射（实际上会添加多条不同请求方法的路由映射）
      *
      * @param  string          $pattern 路由匹配规则
      * @param  callable|string $handler 路由处理器
