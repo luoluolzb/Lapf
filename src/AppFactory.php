@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Lqf;
@@ -192,51 +191,34 @@ class AppFactory
             return self::$app;
         } else {
             if (!isset(self::$env)) {
-                self::bindEnv(new Env($_SERVER, $_ENV, $_COOKIE, $_FILES));
+                self::bindEnv(new Env($_SERVER, $_ENV, $_COOKIE, $_FILES, $_POST));
             }
             if (!isset(self::$container)) {
                 self::bindPsr11Container(new Container());
             }
 
-            $psr17Factory = null;
+            $psr17Factory = new Psr17Factory();
+
             if (!isset(self::$uriFactory)) {
-                if (!isset($psr17Factory)) {
-                    $psr17Factory = new Psr17Factory();
-                }
                 self::bindUriFactory($psr17Factory);
             }
             if (!isset(self::$streamFactory)) {
-                if (!isset($psr17Factory)) {
-                    $psr17Factory = new Psr17Factory();
-                }
                 self::bindStreamFactory($psr17Factory);
             }
             if (!isset(self::$requestFactory)) {
-                if (!isset($psr17Factory)) {
-                    $psr17Factory = new Psr17Factory();
-                }
                 self::bindRequestFactory($psr17Factory);
             }
             if (!isset(self::$responseFactory)) {
-                if (!isset($psr17Factory)) {
-                    $psr17Factory = new Psr17Factory();
-                }
                 self::bindResponseFactory($psr17Factory);
             }
             if (!isset(self::$uploadedFileFactory)) {
-                if (!isset($psr17Factory)) {
-                    $psr17Factory = new Psr17Factory();
-                }
                 self::bindUploadedFileFactory($psr17Factory);
             }
             if (!isset(self::$serverRequestFactory)) {
-                if (!isset($psr17Factory)) {
-                    $psr17Factory = new Psr17Factory();
-                }
                 self::bindServerRequestFactory($psr17Factory);
             }
             
-            return $app = new App(
+            return self::$app = new App(
                 self::$env,
                 self::$container,
                 self::$uriFactory,

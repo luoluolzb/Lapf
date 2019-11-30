@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace tests;
@@ -19,9 +18,10 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 $app = AppFactory::getInstance();
 
+// -------------- 初始配置 -----------------
+
 // 加载配置文件
-$config = $app->getConfig();
-$config->loadAndMerge(__DIR__ . '/config.php');
+$config = $app->getConfig()->loadAndMerge(__DIR__ . '/config.php');
 
 // 自己注册错误处理，框架不接管
 $whoops = new \Whoops\Run;
@@ -30,45 +30,42 @@ if ($app->isDebug()) {  // 调试模式
 } else {  // 生产模式
     // 应该添加 Whoops\Handler\CallbackHandler
     // 注入自定义的处理器：如写入错误信息到日志或发送邮件等
-    $callbackHandler = new \Whoops\Handler\CallbackHandler(function (\Exception $exception, $inspector, $run) {
-        error_log($exception->getMessage());
-    });
+    $callbackHandler = new \Whoops\Handler\CallbackHandler(
+        function (\Exception $exception, $inspector, $run) {
+            error_log($exception->getMessage());
+        }
+    );
     $whoops->appendHandler($callbackHandler);
 }
 $whoops->register();
 
-// 注入依赖
+// -------------- 注入依赖 -----------------
+
 $container = $app->getContainer();
 
+// 注入 PDO 实例
 $container->set('pdo', function (Container $c) use ($config) {
-    $c = $config->get('database');
-    return new \PDO(
-        "{$c['type']}:host={$c['host']};port={$c['port']};dbname={$c['dbname']};charset={$c['charset']};",
-        $c['user'],
-        $c['password']
+    $db = $config->get('database');
+    $dsn = sprintf(
+        "%s:host=%s;port=%d;dbname=%s;charset=%s;",
+        $db['type'],
+        $db['host'],
+        $db['port'],
+        $db['dbname'],
+        $db['charset']
     );
+    return new \PDO($dsn, $db['user'], $db['password']);
 });
 
-// 注册路由
-$router = $app->getRouter();
+// -------------- 注册路由 -----------------
 
-// -------------- 路由测试 --------------
+$router = $app->getRouter();
 
 $router->map('GET', '/', function (Request $request): Response {
     $response = new Response();
     $response->getBody()->write("welcome to use Lqf");
     return $response;
 });
-
-// 重复注册路由规则
-// 会抛出 RuntimeException 异常
-// 可以将 try-catch 注释掉查看效果
-try {
-    $router->get('/', function (Request $request): Response {
-        return new Response();
-    });
- } catch (\RuntimeException $e) {
- }
 
 $router->any('/hello[/{name:\w+}]', function (Request $request, array $params): Response {
     $name = $params['name'] ?? 'world';
@@ -84,20 +81,24 @@ $router->group('/abc', function (Collector $collector) {
         $response = new Response();
         $response->getBody()->write('ddd');
         return $response;
-    })->get('/eee', function (Request $request): Response {
+    })
+    ->get('/eee', function (Request $request): Response {
         $response = new Response();
         $response->getBody()->write('eee');
         return $response;
-    })->get('/fff', function (Request $request): Response {
+    })
+    ->get('/fff', function (Request $request): Response {
         $response = new Response();
         $response->getBody()->write('fff');
         return $response;
-    })->group('/ghi', function (Collector $collector) {
+    })
+    ->group('/ghi', function (Collector $collector) {
         $collector->get('/jjj', function (Request $request): Response {
             $response = new Response();
             $response->getBody()->write('jjj');
             return $response;
-        })->get('/kkk', function (Request $request): Response {
+        })
+        ->get('/kkk', function (Request $request): Response {
             $response = new Response();
             $response->getBody()->write('kkk');
             return $response;
@@ -152,18 +153,22 @@ $router->get('/query_params', function (Request $request): Response {
 
 $router->get('/response', function (Request $request): Response {
     $response = new Response();
-    $response->getBody()->write($response->getStatusCode() . ' ' . $response->getReasonPhrase());
+    $response->getBody()->write(
+        $response->getStatusCode() . ' ' . $response->getReasonPhrase()
+    );
     return $response->withHeader('framework', 'Lqf');
 });
 
 $router->any('/body_params', function (Request $request): Response {
     $response = new Response();
-    $params = $request->getParsedBody();
-    $response->getBody()->write(\var_export($params, true));
+    $response->getBody()->write(\json_encode([
+        'query' => $request->getQueryParams(),
+        'body'  => $request->getParsedBody(),
+    ]));
     return $response;
 });
 
-// -------------- 测试路由配合依赖注入容器的实际应用 --------------
+// ---- 测试路由配合依赖注入容器的实际应用 ------
 
 $router->get('/users', function (Request $request) use ($container): Response {
     $stmt = $container->get('pdo')->query('select * from tb_user');
@@ -182,7 +187,7 @@ $router->get('/user/{id:\d+}', function (Request $request, array $params) use ($
     return $response;
 });
 
-// -------------- 测试中间件 --------------
+// -------------- 测试中间件 ----------------
 
 // 前置中间件
 class BeforeMiddleware implements MiddlewareInterface
@@ -235,7 +240,7 @@ $router->get('/middleware', function (Request $request): Response {
     return $response;
 });
 
-// -------------- 测试控制器 --------------
+// -------------- 测试控制器 ----------------
 
 class IndexController
 {
@@ -257,7 +262,7 @@ class IndexController
 $router->get('/index/get', 'tests\IndexController::get');
 $router->post('/index/post', 'tests\IndexController::post');
 
-// -------------- 测试配置 --------------
+// -------------- 测试配置 ------------------
 
 $router->get('/config/all', function (Request $request) use ($config) {
     $response = new Response();
@@ -325,6 +330,8 @@ $router->post('/fileupload', function (Request $request) use ($config) {
             $body->write('uploaded ' . $filename . '<br/>');
         }
     }
+    
+    $body->write('post_params: ' . print_r($request->getParsedBody(), true));
 
     return $response;
 });

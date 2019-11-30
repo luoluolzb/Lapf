@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Lqf;
@@ -7,6 +6,7 @@ namespace Lqf;
 use \RuntimeException;
 use Lqf\Config\Config;
 use Lqf\Route\Router;
+use Lqf\Config\ConfigInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -87,7 +87,7 @@ class App
     /**
      * 配置对象
      *
-     * @var Config
+     * @var ConfigInterface
      */
     private $config;
     
@@ -113,7 +113,7 @@ class App
         $this->uploadedFileFactory = $uploadedFileFactory;
         $this->serverRequestFactory = $serverRequestFactory;
 
-        $this->config = new Config(__DIR__ . '/config/defaultConfig.php');
+        $this->config = new Config([]);
 
         $this->router = new Router();
         $this->router->setMethodNotAllowedHandler(function (
@@ -127,9 +127,11 @@ class App
             ->withHeader('Allow', $allowMethods)
             ->withBody(
                 $streamFactory->createStream(
-                    '<title>405 Method Not Allowed</title>
+                    <<<'EOS'
+                    <title>405 Method Not Allowed</title>
                     <h1 align="center">405 Method Not Allowed</h1><hr />
-                    <p align="center">lqf framework<p/>'
+                    <p align="center">lqf framework<p/>
+                    EOS
                 )
             );
         });
@@ -142,9 +144,11 @@ class App
             return $responseFactory->createResponse(404)
             ->withBody(
                 $streamFactory->createStream(
-                    '<title>404 Not Found</title>
+                    <<<'EOS'
+                    <title>404 Not Found</title>
                     <h1 align="center">404 Not Found</h1><hr />
-                    <p align="center">lqf framework<p/>'
+                    <p align="center">lqf framework<p/>
+                    EOS
                 )
             );
         });
@@ -185,7 +189,7 @@ class App
      *
      * @return Config 配置对象
      */
-    public function getConfig()
+    public function getConfig(): ConfigInterface
     {
         return $this->config;
     }
@@ -208,7 +212,7 @@ class App
      */
     public function start(): void
     {
-        $this->request = $this->buildRequest();
+        $this->request  = $this->buildRequest();
         $this->response = $this->router->dispatch($this->request);
         $this->sendResponse($this->response);
     }
@@ -232,7 +236,7 @@ class App
         $uri = $this->uriFactory->createUri($fullRawUri);
 
         // 构建请求对象
-        $requestMethod = $serverParams['REQUEST_METHOD'];
+        $requestMethod = strtoupper($serverParams['REQUEST_METHOD']);
         $request = $this->serverRequestFactory->createServerRequest($requestMethod, $uri, $serverParams);
         \parse_str($uri->getQuery(), $queryParams);
         $request = $request->withQueryParams($queryParams);
@@ -240,7 +244,7 @@ class App
         // 设置请求头
         if (!\function_exists('\getallheaders')) {
             $headers = [];
-            foreach ($serverParams as $name => &$value) {
+            foreach ($serverParams as $name => $value) {
                 if (\substr($name, 0, 5) == 'HTTP_') {
                     $name = \strtolower(\str_replace('_', ' ', \substr($name, 5)));
                     $name = \str_replace(' ', '-', \ucwords($name));
@@ -250,7 +254,7 @@ class App
         } else {
             $headers = \getallheaders();
         }
-        foreach ($headers as $name => &$value) {
+        foreach ($headers as $name => $value) {
             $request = $request->withHeader($name, \explode(',', $value));
         }
 
@@ -269,13 +273,16 @@ class App
         }
 
         // 设置上传文件
-        if (\strcasecmp($requestMethod, 'POST') === 0) {
+        if ($requestMethod === 'POST') {
             $uploadedFiles = [];
-            foreach ($this->env->files() as $field => &$value) {
+            foreach ($this->env->files() as $field => $value) {
                 if (\is_array($value['error'])) { // 多个文件
                     foreach ($value['error'] as $i => $error) {
+                        $stream = file_exists($value['tmp_name'][$i])
+                        ? $this->streamFactory->createStreamFromFile($value['tmp_name'][$i])
+                        : $this->streamFactory->createStream();
                         $uploadedFiles[$field][] = $this->uploadedFileFactory->createUploadedFile(
-                            $this->streamFactory->createStreamFromFile($value['tmp_name'][$i]),
+                            $stream,
                             $value['size'][$i],
                             $value['error'][$i],
                             $value['name'][$i],
@@ -283,8 +290,11 @@ class App
                         );
                     }
                 } else { // 单个文件
+                    $stream = file_exists($value['tmp_name'])
+                    ? $this->streamFactory->createStreamFromFile($value['tmp_name'])
+                    : $this->streamFactory->createStream();
                     $uploadedFiles[$field] = $this->uploadedFileFactory->createUploadedFile(
-                        $this->streamFactory->createStreamFromFile($value['tmp_name']),
+                        $stream,
                         $value['size'],
                         $value['error'],
                         $value['name'],
@@ -293,6 +303,9 @@ class App
                 }
             }
             $request = $request->withUploadedFiles($uploadedFiles);
+            if (!empty($uploadedFiles)) {
+                $request = $request->withParsedBody($_POST);
+            }
         }
 
         // 设置cookie
@@ -314,7 +327,7 @@ class App
         \http_response_code($response->getStatusCode());
 
         // 发送响应头
-        foreach ($response->getHeaders() as $name => &$values) {
+        foreach ($response->getHeaders() as $name => $values) {
             foreach ($values as $value) {
                 \header(\sprintf('%s: %s', $name, $value), false);
             }
@@ -324,7 +337,7 @@ class App
         $stream = $response->getBody();
         $stream->rewind();
         while (!empty($buffer = $stream->read(2048))) {
-            print $buffer;
+            print($buffer);
         }
     }
 }

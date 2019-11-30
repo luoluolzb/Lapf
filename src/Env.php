@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Lqf;
@@ -42,24 +41,33 @@ class Env
     private $files;
 
     /**
+     * HTTP POST 参数
+     *
+     * @var array
+     */
+    private $post;
+
+    /**
      * 实例化环境类
      */
     public function __construct(
         array $server,
         array $env,
         array $cookie,
-        array $files
+        array $files,
+        array $post
     ) {
         $this->server = $server;
         $this->env    = $env;
         $this->cookie = $cookie;
         $this->files  = $files;
+        $this->post   = $post;
     }
 
     /**
      * 获取一个或全部服务器参数
      *
-     * @param  string|null $name 参数名，默认null获取全部
+     * @param  string|null $name 参数名，默认获取全部
      *
      * @return mixed
      */
@@ -71,7 +79,7 @@ class Env
     /**
      * 获取一个或全部环境参数
      *
-     * @param  string|null $name 参数名，默认null获取全部
+     * @param  string|null $name 参数名，默认获取全部
      *
      * @return mixed
      */
@@ -83,7 +91,7 @@ class Env
     /**
      * 获取一个或全部cookie参数
      *
-     * @param  string|null $name 参数名，默认null获取全部
+     * @param  string|null $name 参数名，默认获取全部
      *
      * @return mixed
      */
@@ -95,12 +103,24 @@ class Env
     /**
      * 获取一个或全部上传文件信息
      *
-     * @param  string|null $name input表单的name，默认null获取全部
+     * @param  string|null $name input表单的name，默认获取全部
      *
      * @return mixed
      */
     public function files(string $name = null)
     {
         return isset($name) ? ($this->files[$name] ?? null) : $this->files;
+    }
+
+    /**
+     * 获取一个或全部post参数
+     *
+     * @param  string|null $name i参数名，默认获取全部
+     *
+     * @return mixed
+     */
+    public function post(string $name = null)
+    {
+        return isset($name) ? ($this->post[$name] ?? null) : $this->post;
     }
 }
