@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Lqf;
 
+use luoluolzb\di\Container;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -10,7 +11,6 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\ServerRequestFactoryInterface;
-use luoluolzb\di\Container;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
 /**
@@ -28,9 +28,9 @@ class AppFactory
     private static $app = null;
 
     /**
-     * @var Env
+     * @var Envir
      */
-    private static $env;
+    private static $envir;
 
     /**
      * @var ContainerInterface
@@ -68,15 +68,15 @@ class AppFactory
     private static $serverRequestFactory;
 
     /**
-     * 绑定一个 Env 实例到将要创建的应用对象上
+     * 绑定一个 Envir 实例到将要创建的应用对象上
      *
-     * @param  Env $env
+     * @param  Envir $envir
      *
      * @return void
      */
-    public static function bindEnv(Env $env): void
+    public static function bindEnvir(Envir $envir): void
     {
-        self::$env = $env;
+        self::$envir = $envir;
     }
 
     /**
@@ -190,15 +190,14 @@ class AppFactory
         if (isset(self::$app)) {
             return self::$app;
         } else {
-            if (!isset(self::$env)) {
-                self::bindEnv(new Env($_SERVER, $_ENV, $_COOKIE, $_FILES, $_POST));
+            if (!isset(self::$envir)) {
+                self::bindEnvir(new Envir());
             }
             if (!isset(self::$container)) {
                 self::bindPsr11Container(new Container());
             }
 
             $psr17Factory = new Psr17Factory();
-
             if (!isset(self::$uriFactory)) {
                 self::bindUriFactory($psr17Factory);
             }
@@ -219,7 +218,7 @@ class AppFactory
             }
             
             return self::$app = new App(
-                self::$env,
+                self::$envir,
                 self::$container,
                 self::$uriFactory,
                 self::$streamFactory,

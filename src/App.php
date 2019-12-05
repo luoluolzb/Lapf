@@ -3,10 +3,8 @@ declare(strict_types=1);
 
 namespace Lqf;
 
-use \RuntimeException;
 use Lqf\Config\Config;
 use Lqf\Route\Router;
-use Lqf\Config\ConfigInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -26,9 +24,16 @@ use Psr\Http\Message\ServerRequestFactoryInterface;
 class App
 {
     /**
-     * @var Env
+     * @var Envir
      */
-    private $env;
+    private $envir;
+
+    /**
+     * 配置对象
+     *
+     * @var Config
+     */
+    private $config;
 
     /**
      * @var ContainerInterface
@@ -83,19 +88,12 @@ class App
      * @var ResponseInterface
      */
     private $response;
-
-    /**
-     * 配置对象
-     *
-     * @var ConfigInterface
-     */
-    private $config;
     
     /**
      * 实例化应用类
      */
     public function __construct(
-        Env $env,
+        Envir $envir,
         ContainerInterface $container,
         UriFactoryInterface $uriFactory,
         StreamFactoryInterface $streamFactory,
@@ -104,7 +102,7 @@ class App
         UploadedFileFactoryInterface $uploadedFileFactory,
         ServerRequestFactoryInterface $serverRequestFactory
     ) {
-        $this->env = $env;
+        $this->envir = $envir;
         $this->container = $container;
         $this->uriFactory = $uriFactory;
         $this->streamFactory = $streamFactory;
@@ -177,11 +175,11 @@ class App
     /**
      * 获取应用的环境对象
      *
-     * @return Env 环境对象
+     * @return Envir 环境对象
      */
-    public function getEnv(): Env
+    public function getEnvir(): Envir
     {
-        return $this->env;
+        return $this->envir;
     }
 
     /**
@@ -189,7 +187,7 @@ class App
      *
      * @return Config 配置对象
      */
-    public function getConfig(): ConfigInterface
+    public function getConfig(): Config
     {
         return $this->config;
     }
@@ -224,7 +222,7 @@ class App
      */
     private function buildRequest(): ServerRequestInterface
     {
-        $serverParams = $this->env->server();
+        $serverParams = $this->envir->server();
 
         // 构建请求uri对象
         $requestUri = $serverParams['REQUEST_URI'];
@@ -237,11 +235,13 @@ class App
 
         // 构建请求对象
         $requestMethod = strtoupper($serverParams['REQUEST_METHOD']);
-        $request = $this->serverRequestFactory->createServerRequest($requestMethod, $uri, $serverParams);
-        \parse_str($uri->getQuery(), $queryParams);
-        $request = $request->withQueryParams($queryParams);
+        $request = $this->serverRequestFactory->createServerRequest(
+            $requestMethod,
+            $uri,
+            $serverParams
+        );
 
-        // 设置请求头
+        // 构建请求头
         if (!\function_exists('\getallheaders')) {
             $headers = [];
             foreach ($serverParams as $name => $value) {
@@ -263,19 +263,44 @@ class App
         if ($resource) {
             $bodyStream = $this->streamFactory->createStreamFromResource($resource);
             $request = $request->withBody($bodyStream);
-
-            // 解析正文参数
+        }
+        
+        // 构建url查询参数
+        $request = $request->withQueryParams($this->envir->get());
+        
+        // 构建body解析参数
+        $contentType = $request->getHeaderLine('Content-Type');
+        $parsedBody = null;
+        
+        if (($contentType === 'application/form-data'
+            || $contentType === 'application/x-www-form-urlencoded')
+            && $requestMethod === 'POST'
+        ) {
+            $parsedBody = $this->envir->post();
+        } else if ($requestMethod !== 'GET' && isset($bodyStream)) {
             $bodyStr = (string) $bodyStream;
-            if ($bodyStr) {
-                \parse_str($bodyStr, $parsedBody);
-                $request = $request->withParsedBody($parsedBody);
+            if (!empty($bodyStr)) {
+                switch ($contentType) {
+                    case 'application/form-data':
+                    case 'application/x-www-form-urlencoded':
+                        \parse_str($bodyStr, $parsedBody);
+                        break;
+                    
+                    case 'application/json':
+                        $parsedBody = \json_decode($bodyStr, true);
+                        break;
+                    
+                    default:
+                        break;
+                }
             }
         }
+        $request = $request->withParsedBody($parsedBody);
 
-        // 设置上传文件
+        // 构建上传文件
         if ($requestMethod === 'POST') {
             $uploadedFiles = [];
-            foreach ($this->env->files() as $field => $value) {
+            foreach ($this->envir->files() as $field => $value) {
                 if (\is_array($value['error'])) { // 多个文件
                     foreach ($value['error'] as $i => $error) {
                         $stream = file_exists($value['tmp_name'][$i])
@@ -303,13 +328,10 @@ class App
                 }
             }
             $request = $request->withUploadedFiles($uploadedFiles);
-            if (!empty($uploadedFiles)) {
-                $request = $request->withParsedBody($_POST);
-            }
         }
 
-        // 设置cookie
-        $request = $request->withCookieParams($this->env->cookie());
+        // 设置cookie参数
+        $request = $request->withCookieParams($this->envir->cookie());
         
         return $request;
     }

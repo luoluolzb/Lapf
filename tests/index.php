@@ -163,6 +163,7 @@ $router->any('/body_params', function (Request $request): Response {
     $response = new Response();
     $response->getBody()->write(\json_encode([
         'query' => $request->getQueryParams(),
+        'Content-Type' => $request->getHeaderLine('Content-Type'),
         'body'  => $request->getParsedBody(),
     ]));
     return $response;
